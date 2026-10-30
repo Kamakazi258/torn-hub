@@ -112,7 +112,37 @@
   .modal label span{color:var(--muted)}
   .foot{color:var(--faint);font-size:12px;margin-top:22px;text-align:center}
   .foot a{color:var(--muted)}
+  .ic{background:none;border:0;cursor:pointer;color:var(--faint);font-size:15px;line-height:1;padding:0 2px;vertical-align:middle}
+  .ic:hover{color:var(--text)}
+  .ic.star.on{color:var(--idle)} .ic.bell.on{color:var(--accent)}
+  .hitc{display:flex;align-items:center;gap:6px}
+  .hitc b{font:700 15px var(--display);min-width:14px}
+  .plus{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:7px;padding:1px 7px;font:600 11.5px Inter,sans-serif;cursor:pointer}
+  .plus:hover{border-color:var(--accent)}
+  .lh{display:block;color:var(--faint);font-size:11px;line-height:1.3;margin-top:2px}
+  .lh.win{color:var(--good)} .lh.loss{color:var(--bad)}
+  .d.pinned{background:var(--idle)} .d.archive{background:#4e4b60}
+  .toast{position:fixed;right:16px;bottom:16px;z-index:3000;display:grid;gap:8px}
+  .toast div{background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:13px}
+  .toast a{color:var(--accent);font-weight:600}
   @media (max-width:600px){ h1{font-size:19px} td,th{padding:8px 9px} }
+  /* phone: each player becomes a card */
+  @media (max-width:640px){
+    .tw{overflow:visible;border:0;background:none}
+    table{min-width:0;table-layout:auto}
+    colgroup,thead{display:none}
+    table,tbody{display:block}
+    tr[data-id]{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+    tr[data-id] td{border:0;padding:0;white-space:normal;overflow:visible;text-align:left}
+    tr[data-id] td[data-l]::before{content:attr(data-l);display:block;color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px}
+    tr[data-id] td.nmc{grid-column:1/-1}
+    tr[data-id] td.stc{grid-column:1/-1}
+    tr[data-id] td.hcc{grid-column:1/3}
+    tr[data-id] td.acc{grid-column:3/4;align-self:center}
+    tr[data-id] td.rmc{grid-column:4/5;align-self:center;text-align:right}
+    .atk{padding:8px 16px;font-size:13px}
+    .filters{gap:10px}
+  }
 </style>
 </head>
 <body data-section="targets">
@@ -169,12 +199,15 @@
   <div class="err" id="err"></div>
 
   <div class="summary" id="summary"></div>
+  <div class="toast" id="toast"></div>
 
   <div class="filters">
     <label class="chk"><input type="checkbox" id="fOkay">Okay only</label>
     <label class="chk"><input type="checkbox" id="fHideInactive">Hide inactive</label>
     <span>Inactive after <input type="number" id="fDays" min="1" max="3650" value="30"> days</span>
     <button class="btn small" id="clearBtn">Clear inactive...</button>
+    <span>Archive after <input type="number" id="fArchive" min="1" max="3650" value="60"> days</span>
+    <button class="btn small ghost" id="resetHits">Reset hit counts</button>
     <span class="spacer"></span>
     <input type="text" id="fSearch" placeholder="Search name, ID or note" style="min-width:200px;padding:5px 10px">
   </div>
@@ -194,7 +227,7 @@
   // ---------------------------------------------------------------- settings
   var API = 'https://api.torn.com/v2';
   var FF_API = 'https://ffscouter.com/api/v1/get-stats';
-  var PER_MIN = 60;            // Torn requests per minute this page may use (Torn allows about 100 per key)
+  var PER_MIN = 40;            // Torn requests per minute this page may use (Torn allows 100 per key, shared with your other Torn tools)
   var FACTION_EVERY = 60;      // seconds between refreshes of each followed faction
   var FF_EVERY = 600;          // seconds between FF Scouter refreshes
   var MYSTATS_EVERY = 3600;    // seconds between refreshes of your own battle stats
@@ -269,7 +302,8 @@
     obs: load('tg_obs', {}) || {},            // take-off windows seen by this page
     facAt: {}, queue: [], loaded: false
   };
-  var prefs = load('tg_prefs', { okay: false, hideInactive: false, days: 30, sort: {}, strongOpen: false });
+  var prefs = Object.assign({ okay: false, hideInactive: false, days: 30, archiveDays: 60, sort: {}, strongOpen: false, archiveOpen: false }, load('tg_prefs', {}) || {});
+  S.hist = load('tg_hist', {}) || {}; S.histAt = 0; S.histFrom = load('tg_hist_from', 0) || 0; S.histState = 'none'; S.prevOk = {};
 
   // ---------------------------------------------------------------- list storage (TornHub data service, with a browser copy as backup)
   var Store = {
@@ -374,6 +408,7 @@
     });
   });
   $('changeKey').addEventListener('click', function () { $('keyCard').classList.remove('hidden'); $('keyInput').focus(); });
+  function findPlayer(id) { id = Number(id); for (var i = 0; i < S.list.players.length; i++) if (S.list.players[i].id === id) return S.list.players[i]; return null; }
   function unfollow(fid) {
     S.list.factions = S.list.factions.filter(function (f) { return f.id !== fid; });
     Store.save(); render();
@@ -411,7 +446,9 @@
     S.list.players.forEach(function (p) {
       if (viaFac[p.id]) return;
       var d = S.data[p.id];
+      if (d && d.t && archived(p) && n - d.t < 3600) return;   // archived: once an hour is enough
       var score = !d ? 1e9 : (n - d.t);
+      if (p.watch) score += 120;                               // watched players are checked a little sooner
       if (d && d.status && (d.status.state === 'Hospital' || d.status.state === 'Jail') && d.status.until) {
         var left = d.status.until - n;
         if (left > -30 && left < 180) score += 5000;
@@ -423,7 +460,6 @@
   var budget = 0;
   function pump() {
     if (!S.key) return;
-    budget = Math.min(budget + PER_MIN / 60, 3);
     // followed factions: one request refreshes every member
     var n = now();
     for (var i = 0; i < S.list.factions.length && budget >= 1; i++) {
@@ -455,7 +491,10 @@
   }
   function noteApiError(e) {
     if (e.code === 2) showErr('Torn says this API key is incorrect. Press Change key and enter it again.');
-    else if (e.code === 5) { showErr('Torn says too many requests. Slowing down for a minute.'); budget = -60; }
+    else if (e.code === 5) {
+      showErr('Torn says too many requests (your key is also used by other Torn tools). Pausing for a minute, then carrying on.');
+      budget = -60; clearTimeout(noteApiError.t); noteApiError.t = setTimeout(function () { showErr(''); }, 65000);
+    }
   }
 
   // FF Scouter estimates, every 10 minutes, 200 players per request
@@ -537,13 +576,72 @@
     return a === 'Online' ? 'online' : a === 'Idle' ? 'idle' : 'offline';
   }
   function lastSecs(d) { return d && d.last && d.last.timestamp ? now() - d.last.timestamp : null; }
+  function archived(p) { var s = lastSecs(S.data[p.id]); return !p.pin && s != null && s > prefs.archiveDays * 86400; }
+
+  // your own attack log: when you last hit each player and the result (needs a Limited Access key)
+  var WIN = /hosp|mug|attacked|arrest|special|leave/i;
+  function loadHistory() {
+    if (!S.key) return;
+    S.histAt = now();
+    var from = S.histFrom || (now() - 30 * 86400);
+    api('/user/attacks?limit=100&sort=ASC&from=' + from).then(function (d) {
+      var list = (d && d.attacks) || [], newest = from;
+      list.forEach(function (a) {
+        if (!a || !a.defender) return;
+        var t = a.ended || a.started || 0, id = String(a.defender.id), old = S.hist[id];
+        if (a.attacker && Number(a.attacker.id) === Number(a.defender.id)) return;
+        if (!old || t >= old.t) S.hist[id] = { t: t, r: a.result || '' };
+        if (t > newest) newest = t;
+      });
+      S.histFrom = list.length >= 100 ? newest : Math.max(from, newest - 60);
+      S.histState = 'ok'; save('tg_hist', S.hist); save('tg_hist_from', S.histFrom); dirty = true;
+      if (list.length >= 100) S.histAt = 0;   // more to read: fetch the next page on the next turn
+    }).catch(function (e) { S.histState = (e.code === 16 || e.code === 7) ? 'noaccess' : 'error'; dirty = true; });
+  }
+  function histCell(id) {
+    var h = S.hist[id];
+    if (!h) return S.histState === 'noaccess' ? '<span class="lh" title="Needs a Limited Access key">no hit history</span>' : '<span class="lh">not hit yet</span>';
+    var lost = /lost|stalemate|timeout|escape|assist|interrupt/i.test(h.r);
+    return '<span class="lh ' + (lost ? 'loss' : 'win') + '">' + esc(h.r || 'Hit') + ' \u00b7 ' + ago(now() - h.t) + '</span>';
+  }
+
+  // alerts when a watched player becomes Okay
+  function beep() {
+    try {
+      var c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination); o.frequency.value = 880; g.gain.value = 0.08;
+      o.start(); o.frequency.setValueAtTime(660, c.currentTime + 0.15); o.stop(c.currentTime + 0.3);
+    } catch (e) {}
+  }
+  function alertOkay(p) {
+    var d = S.data[p.id] || {}, name = d.name || ('Player ' + p.id), url = 'https://www.torn.com/page.php?sid=attack&user2ID=' + p.id;
+    beep();
+    var box = document.createElement('div');
+    box.innerHTML = '<b>' + esc(name) + '</b> is Okay now. <a href="' + url + '" target="_blank" rel="noopener">Attack</a>';
+    $('toast').appendChild(box); setTimeout(function () { box.remove(); }, 20000);
+    try {
+      if (window.Notification && Notification.permission === 'granted') {
+        var n = new Notification(name + ' is Okay now', { body: 'Click to open the attack page.', tag: 'tg' + p.id });
+        n.onclick = function () { window.open(url, '_blank'); n.close(); };
+      }
+    } catch (e) {}
+  }
+  function checkAlerts() {
+    S.list.players.forEach(function (p) {
+      if (!p.watch) { delete S.prevOk[p.id]; return; }
+      var d = S.data[p.id]; if (!d || !d.status) return;
+      var ok = statusInfo(d).ok;
+      if (S.prevOk[p.id] === false && ok) alertOkay(p);
+      S.prevOk[p.id] = ok;
+    });
+  }
   function tooStrong(id) { var f = S.ff[id]; return S.myTotal && f && f.bs_estimate != null && Number(f.bs_estimate) > S.myTotal; }
 
   // ---------------------------------------------------------------- render
   var COLS = [
-    { k: 'name', t: 'Member', w: '20%' }, { k: 'level', t: 'Level', num: 1, w: '7%' }, { k: 'ff', t: 'FF', num: 1, w: '7%' },
-    { k: 'bs', t: 'Est. stats', num: 1, w: '10%' }, { k: 'last', t: 'Last active', w: '13%' },
-    { k: 'status', t: 'Status', w: '26%' }, { k: 'attack', t: 'Attack', w: '11%' }, { k: 'rm', t: '', w: '6%', nos: 1 }
+    { k: 'name', t: 'Member', w: '20%' }, { k: 'level', t: 'Level', num: 1, w: '6%' }, { k: 'ff', t: 'FF', num: 1, w: '6%' },
+    { k: 'bs', t: 'Est. stats', num: 1, w: '8%' }, { k: 'last', t: 'Last active', w: '11%' },
+    { k: 'status', t: 'Status', w: '22%' }, { k: 'hits', t: 'Hits', w: '13%' }, { k: 'attack', t: 'Attack', w: '9%' }, { k: 'rm', t: '', w: '5%', nos: 1 }
   ];
   var SECTIONS = [['online', 'Online'], ['idle', 'Idle'], ['offline', 'Offline'], ['abroad', 'Abroad']];
   function sortVal(p, k) {
@@ -556,6 +654,7 @@
       case 'last': var s = lastSecs(d); return s == null ? 1e12 : s;
       case 'status': var i = statusInfo(d); return i.rank * 1e7 + i.left;
       case 'attack': return statusInfo(d).ok ? 1 : 0;
+      case 'hits': var h = S.hist[p.id]; return (p.hits || 0) * 1e10 + (h ? h.t : 0);
     }
     return 0;
   }
@@ -580,15 +679,18 @@
   function row(p) {
     var d = S.data[p.id], i = statusInfo(d), name = (d && d.name) || ('Player ' + p.id);
     return '<tr data-id="' + p.id + '">' +
-      '<td class="nmc"><a class="nm" href="https://www.torn.com/profiles.php?XID=' + p.id + '" target="_blank" rel="noopener">' + esc(name) + '</a>' +
+      '<td class="nmc"><button class="ic star' + (p.pin ? ' on' : '') + '" data-pin="' + p.id + '" title="' + (p.pin ? 'Unpin' : 'Pin to the top') + '">' + (p.pin ? '\u2605' : '\u2606') + '</button>' +
+        '<button class="ic bell' + (p.watch ? ' on' : '') + '" data-watch="' + p.id + '" title="' + (p.watch ? 'Stop alerts' : 'Alert me when Okay') + '">' + (p.watch ? '\u{1F514}' : '\u{1F515}') + '</button> ' +
+        '<a class="nm" href="https://www.torn.com/profiles.php?XID=' + p.id + '" target="_blank" rel="noopener">' + esc(name) + '</a>' +
         '<span class="nt">' + esc(p.id) + (p.note ? ' · ' + esc(p.note) : '') + '</span></td>' +
-      '<td class="num">' + ((d && d.level) || '') + '</td>' +
-      '<td class="num">' + ffCell(p.id) + '</td>' +
-      '<td class="num">' + bsCell(p.id) + '</td>' +
-      '<td class="lac">' + lastCell(d) + '</td>' +
+      '<td class="num" data-l="Level">' + ((d && d.level) || '') + '</td>' +
+      '<td class="num" data-l="FF">' + ffCell(p.id) + '</td>' +
+      '<td class="num" data-l="Est. stats">' + bsCell(p.id) + '</td>' +
+      '<td class="lac" data-l="Last active">' + lastCell(d) + '</td>' +
       '<td class="stc"><span class="st ' + i.cls + '">' + esc(i.text) + '</span>' + detail(p.id, d) + '<span class="fresh">' + (d && d.t ? 'checked ' + ago(now() - d.t) : 'waiting for first check') + '</span></td>' +
-      '<td><a class="atk' + (i.ok ? '' : ' dim') + '" href="https://www.torn.com/loader.php?sid=attack&amp;user2ID=' + p.id + '" target="_blank" rel="noopener">Attack</a></td>' +
-      '<td><button class="rm" title="Remove from list" data-rm="' + p.id + '">×</button></td></tr>';
+      '<td class="hcc" data-l="Hits"><span class="hitc"><b>' + (p.hits || 0) + '</b><button class="plus" data-hit="' + p.id + '" title="Add one hit">+1</button></span>' + histCell(p.id) + '</td>' +
+      '<td class="acc"><a class="atk' + (i.ok ? '' : ' dim') + '" href="https://www.torn.com/page.php?sid=attack&amp;user2ID=' + p.id + '" target="_blank" rel="noopener">Attack</a></td>' +
+      '<td class="rmc"><button class="rm" title="Remove from list" data-rm="' + p.id + '">×</button></td></tr>';
   }
   function table(list, sec) {
     var s = prefs.sort[sec] || { k: 'status', d: 1 };
@@ -614,20 +716,22 @@
   }
   function render() {
     dirty = false;
-    var groups = { online: [], idle: [], offline: [], abroad: [], strong: [] }, n = now();
+    var groups = { pinned: [], online: [], idle: [], offline: [], abroad: [], strong: [], archive: [] }, n = now(), hits = 0;
     var okay = 0, hosp = 0, inactive = 0;
     S.list.players.forEach(function (p) {
       var d = S.data[p.id], i = statusInfo(d), s = lastSecs(d);
       if (i.ok) okay++; if (d && d.status && d.status.state === 'Hospital' && i.left > 0) hosp++;
       if (s != null && s > prefs.days * 86400) inactive++;
+      hits += p.hits || 0;
       if (!visible(p)) return;
-      groups[tooStrong(p.id) ? 'strong' : section(d)].push(p);
+      groups[p.pin ? 'pinned' : archived(p) ? 'archive' : tooStrong(p.id) ? 'strong' : section(d)].push(p);
     });
     $('summary').innerHTML =
       '<div class="stat"><div class="k">On list</div><div class="v">' + fmtNum(S.list.players.length) + '</div></div>' +
       '<div class="stat"><div class="k">Okay now</div><div class="v" style="color:var(--good)">' + okay + '</div></div>' +
       '<div class="stat"><div class="k">In hospital</div><div class="v" style="color:var(--bad)">' + hosp + '</div></div>' +
       '<div class="stat"><div class="k">Inactive ' + prefs.days + 'd+</div><div class="v" style="color:var(--idle)">' + inactive + '</div></div>' +
+      '<div class="stat"><div class="k">Hits counted</div><div class="v" style="color:var(--accent)">' + hits + '</div></div>' +
       '<div class="stat"><div class="k">Your stats</div><div class="v">' + (S.myTotal ? short(S.myTotal) : '-') + '</div></div>';
     $('facList').innerHTML = S.list.factions.map(function (f) {
       return '<span class="fchip"><b>' + esc(f.name) + '</b>' + (f.follow ? 'following' : 'fixed') + '<button title="Stop following (keeps its players)" data-unf="' + f.id + '">×</button></span>';
@@ -635,15 +739,19 @@
     var ph = '';
     if (!S.list.players.length) ph = '<div class="card empty">Your list is empty. Add players or a whole faction above.</div>';
     else {
+      if (groups.pinned.length) ph += '<div class="sec"><div class="sech"><span class="d pinned"></span>Pinned <span class="n">(' + groups.pinned.length + ')</span></div>' + table(groups.pinned, 'pinned') + '</div>';
       SECTIONS.forEach(function (s) {
         ph += '<div class="sec"><div class="sech"><span class="d ' + s[0] + '"></span>' + s[1] + ' <span class="n">(' + groups[s[0]].length + ')</span></div>' + table(groups[s[0]], s[0]) + '</div>';
       });
       ph += '<div class="sec"><div class="sech toggle" id="strongHead"><span class="d strong"></span>Too strong <span class="n">(' + groups.strong.length + ')</span>' +
         '<span class="car">' + (prefs.strongOpen ? '▾ hide' : '▸ show') + '</span><span class="n" style="text-transform:none;letter-spacing:0">estimated stats above yours</span></div>' +
         (prefs.strongOpen ? table(groups.strong, 'strong') : '') + '</div>';
+      ph += '<div class="sec"><div class="sech toggle" id="archiveHead"><span class="d archive"></span>Archive <span class="n">(' + groups.archive.length + ')</span>' +
+        '<span class="car">' + (prefs.archiveOpen ? '\u25BE hide' : '\u25B8 show') + '</span><span class="n" style="text-transform:none;letter-spacing:0">inactive more than ' + prefs.archiveDays + ' days, checked once an hour</span></div>' +
+        (prefs.archiveOpen ? table(groups.archive, 'archive') : '') + '</div>';
     }
     $('panel').innerHTML = ph;
-    var viaFac = Object.keys(followedIds()).length, solo = S.list.players.length - viaFac;
+    var viaFac = Object.keys(followedIds()).length, solo = S.list.players.length - viaFac - groups.archive.length;
     var cyc = solo ? Math.ceil(solo / PER_MIN) : 0;
     $('cycle').textContent = !S.key ? '' : solo ? 'Each player is checked about every ' + (cyc <= 1 ? 'minute' : cyc + ' minutes') + (viaFac ? '; followed factions every minute' : '') : (viaFac ? 'Followed factions are checked every minute' : '');
   }
@@ -688,6 +796,25 @@
     var unf = t.closest && t.closest('[data-unf]');
     if (unf) { unfollow(Number(unf.getAttribute('data-unf'))); return; }
     if (t.closest && t.closest('#strongHead')) { prefs.strongOpen = !prefs.strongOpen; save('tg_prefs', prefs); render(); return; }
+    if (t.closest && t.closest('#archiveHead')) { prefs.archiveOpen = !prefs.archiveOpen; save('tg_prefs', prefs); render(); return; }
+    var pin = t.closest && t.closest('[data-pin]');
+    if (pin) { var pp = findPlayer(pin.getAttribute('data-pin')); if (pp) { pp.pin = !pp.pin; Store.save(); render(); } return; }
+    var w = t.closest && t.closest('[data-watch]');
+    if (w) {
+      var pw = findPlayer(w.getAttribute('data-watch'));
+      if (pw) {
+        pw.watch = !pw.watch; Store.save(); render();
+        if (pw.watch) {
+          beep();
+          try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+          var dw = S.data[pw.id]; S.prevOk[pw.id] = dw && dw.status ? statusInfo(dw).ok : undefined;
+          msg('You will get an alert when ' + ((dw && dw.name) || pw.id) + ' is Okay. Keep this page open.');
+        }
+      }
+      return;
+    }
+    var hb = t.closest && t.closest('[data-hit]');
+    if (hb) { var ph2 = findPlayer(hb.getAttribute('data-hit')); if (ph2) { ph2.hits = (ph2.hits || 0) + 1; Store.save(); render(); } return; }
     var th = t.closest && t.closest('th[data-k]');
     if (th) {
       var sec = th.closest('table').getAttribute('data-sec'), k = th.getAttribute('data-k'), s = prefs.sort[sec] || { k: 'status', d: 1 };
@@ -700,6 +827,12 @@
   $('fHideInactive').addEventListener('change', function () { prefs.hideInactive = this.checked; save('tg_prefs', prefs); render(); });
   $('fDays').addEventListener('change', function () { var v = Math.max(1, Math.min(3650, parseInt(this.value, 10) || 30)); this.value = v; prefs.days = v; save('tg_prefs', prefs); render(); });
   $('fSearch').addEventListener('input', function () { render(); });
+  $('fArchive').value = prefs.archiveDays;
+  $('fArchive').addEventListener('change', function () { var v = Math.max(1, Math.min(3650, parseInt(this.value, 10) || 60)); this.value = v; prefs.archiveDays = v; save('tg_prefs', prefs); render(); });
+  $('resetHits').addEventListener('click', function () {
+    if (!confirm('Set every hit count back to 0?')) return;
+    S.list.players.forEach(function (p) { delete p.hits; }); Store.save(); render(); msg('Hit counts reset.');
+  });
   $('clearBtn').addEventListener('click', openClear);
   $('refreshBtn').addEventListener('click', function () { S.facAt = {}; S.queue = S.list.players.map(function (p) { return p.id; }); loadFF(); msg('Refreshing everyone in turns...'); });
   $('saveKey').addEventListener('click', function () {
@@ -709,7 +842,7 @@
   $('keyInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('saveKey').click(); });
 
   // ---------------------------------------------------------------- start
-  var dirty = true;
+  var dirty = true, holdSince = 0;
   if (!S.key) $('keyCard').classList.remove('hidden');
   Store.load().then(function (l) {
     S.list = { players: (l && l.players) || [], factions: (l && l.factions) || [] };
@@ -717,9 +850,14 @@
   });
   setInterval(function () {
     if (!S.loaded) return;
-    pump(); tick();
+    if (S.key) budget = Math.min(budget + PER_MIN / 60, 3);   // request allowance builds up each second
+    if (S.key && now() - S.histAt > 120 && budget >= 1) { budget -= 1; loadHistory(); }   // your attack log, every 2 minutes
+    pump(); tick(); checkAlerts();
     if (S.key && now() - S.ffAt > FF_EVERY) loadFF();
-    if (dirty && !document.querySelector('#panel tr:hover')) { save('tg_data', S.data); save('tg_obs', S.obs); render(); }
+    var onBtn = document.querySelector('#panel a:hover, #panel button:hover');
+    holdSince = onBtn ? (holdSince || Date.now()) : 0;
+    // do not redraw while the pointer rests on a link or button (so clicks are not lost), but never hold for more than 3 seconds
+    if (dirty && (!onBtn || Date.now() - holdSince > 3000)) { save('tg_data', S.data); save('tg_obs', S.obs); render(); }
   }, 1000);
 })();
 </script>
