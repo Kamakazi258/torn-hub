@@ -315,6 +315,7 @@
     <button class="tab" data-tab="crimes" data-icon="crime">Crimes</button>
     <button class="tab" data-tab="awards" data-icon="award">Awards</button>
     <button class="tab" data-tab="education" data-icon="education">Education</button>
+    <button class="tab" data-tab="jobpoints" data-icon="work">Job Points</button>
   </div>
 
   <div id="tab-overview" class="tabpane"></div>
@@ -322,6 +323,7 @@
   <div id="tab-crimes" class="tabpane hidden"></div>
   <div id="tab-awards" class="tabpane hidden"></div>
   <div id="tab-education" class="tabpane hidden"></div>
+  <div id="tab-jobpoints" class="tabpane hidden"></div>
 
   <div class="foot" id="foot"></div>
 </div>
@@ -1825,6 +1827,48 @@ function updateAwardPane(type){
 
 // ---- shell ----------------------------------------------------------------
 function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+// ---- job points: city (starter) jobs and company jobs ---------------------
+const CITY_JOBS=[["army","Army"],["grocer","Grocer"],["casino","Casino"],["medical","Medical"],["law","Law"],["education","Education"]];
+function renderJobPoints(){
+  const p=$("#tab-jobpoints"); p.innerHTML="";
+  const jp=DATA.jobpoints;
+  if(!jp){ p.appendChild(el("div","infobox","No job points returned by Torn. Press Refresh to try again.")); return; }
+  const jobs=jp.jobs||{}, comps=jp.companies||{}, job=DATA.job||{};
+  const curType=String(job.company_type||"");
+  const city=CITY_JOBS.map(([k,n])=>({key:k,name:n,pts:+jobs[k]||0}));
+  Object.keys(jobs).forEach(k=>{ if(!CITY_JOBS.some(c=>c[0]===k)) city.push({key:k,name:k.charAt(0).toUpperCase()+k.slice(1),pts:+jobs[k]||0}); });
+  const company=Object.keys(comps).map(id=>({id:String(id),name:(comps[id]&&comps[id].name)||("Company type "+id),pts:+(comps[id]&&comps[id].jobpoints)||0}))
+    .sort((a,b)=>b.pts-a.pts||a.name.localeCompare(b.name));
+  const cityTot=city.reduce((a,c)=>a+c.pts,0), compTot=company.reduce((a,c)=>a+c.pts,0);
+
+  const top=el("div","card"); top.appendChild(cardH("Pending job points","work"));
+  const mini=el("div","mini");
+  mini.innerHTML="<div>Total <b>"+fmt(cityTot+compTot)+"</b></div><div>City jobs <b>"+fmt(cityTot)+"</b></div><div>Company jobs <b>"+fmt(compTot)+"</b></div>"+
+    (job.company_name?"<div>Current job <b>"+job.company_name+(job.position?" · "+job.position:"")+"</b></div>":"");
+  top.appendChild(mini);
+  top.appendChild(el("div","cardnote","Job points you have earned and not yet spent, per job. Spend them on that job's or company type's specials in Torn."));
+  p.appendChild(top);
+
+  const grid=el("div","grid g2"); grid.style.marginTop="16px";
+  function section(title,list,tot,isCompany){
+    const c=el("div","card"); c.appendChild(cardH(title+" \u00b7 "+fmt(tot)+" points",isCompany?"work":"work"));
+    if(!list.length){ c.appendChild(el("div","cardnote",isCompany?"No company job points yet.":"No city job points yet.")); return c; }
+    const max=Math.max(1,...list.map(x=>x.pts));
+    list.forEach(x=>{
+      const cur=isCompany&&x.id===curType;
+      const label=x.name+(cur?' <span class="pill accent" style="margin-left:6px">Current job</span>':'');
+      const r=statRow("",fmt(x.pts),x.pts/max*100,x.pts?(cur?"":"good"):"");
+      r.querySelector(".lbl").innerHTML=label;
+      if(!x.pts) r.style.opacity=".55";
+      c.appendChild(r);
+    });
+    return c;
+  }
+  grid.appendChild(section("Company jobs",company,compTot,true));
+  grid.appendChild(section("City jobs",city,cityTot,false));
+  p.appendChild(grid);
+}
+
 function renderErrors(){
   const box=$("#errors"); box.innerHTML="";
   if(DATA&&DATA._error){box.appendChild(el("div","banner",DATA._error));return;}
@@ -1852,7 +1896,7 @@ async function load(force){
   catch(e){ DATA={_error:"Could not reach Torn: "+e.message+". Press Refresh to try again."}; }
   renderErrors(); renderProfile();
   renderOverview(); renderGrowth(); renderCrimes();
-  renderAwards(); renderEducation();
+  renderAwards(); renderEducation(); renderJobPoints();
   const t=DATA&&DATA.fetched_at?new Date(DATA.fetched_at*1000).toLocaleString():"—";
   $("#foot").innerHTML="Data fetched "+t+(DATA&&DATA.cached?" (cached)":"")+
     " · read live from Torn through your private data service.";
