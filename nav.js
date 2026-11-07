@@ -48,6 +48,7 @@
     "display:grid;gap:12px;text-align:center;color:#e9e7f2;font-family:'Inter','Segoe UI',system-ui,sans-serif}",
     ".hubgate h2{margin:0;font:600 20px 'Space Grotesk','Segoe UI',system-ui,sans-serif}",
     ".hubgate p{margin:0;color:#9a96b0;font-size:13.5px}",
+    ".hubgate button[type=button]{background:none;border:1px solid rgba(184,180,214,.2);color:#9a96b0;border-radius:10px;padding:9px;cursor:pointer;font:500 13px 'Inter','Segoe UI',system-ui,sans-serif}",
     ".hubgate input{background:#0e0f14;border:1px solid rgba(184,180,214,.24);border-radius:10px;color:#e9e7f2;padding:11px 12px;font-size:14px}",
     ".hubgate button{background:linear-gradient(180deg,#2a2f44,#1d2130);border:1px solid rgba(184,180,214,.3);border-radius:10px;",
     "color:#e9e7f2;padding:10px;font-size:14px;cursor:pointer}"
@@ -84,6 +85,33 @@
         return d;
       });
   }
+  /** One Torn API key for every page on this site (Targets, Torn Stats, Home and KitsuLand War all read it). */
+  function getKey() {
+    try {
+      var k = localStorage.getItem("torn_key") || localStorage.getItem("kw_key") || "";
+      return k ? JSON.parse(k) : "";
+    } catch (e) { return ""; }
+  }
+  function setKey(k) {
+    try {
+      if (k) { localStorage.setItem("torn_key", JSON.stringify(k)); localStorage.setItem("kw_key", JSON.stringify(k)); }
+      else { localStorage.removeItem("torn_key"); localStorage.removeItem("kw_key"); }
+    } catch (e) {}
+  }
+  function askKey() {
+    var o = document.createElement("div"); o.className = "hubgate";
+    o.innerHTML = '<form><h2>Torn API key</h2><p>' + (getKey() ? "A key is saved in this browser. Enter a new one to replace it." :
+      "Enter your Torn API key. Every TornHub page uses it.") + ' It is saved only in this browser and sent only to Torn and FF Scouter.</p>' +
+      '<input type="text" id="hubKeyIn" autocomplete="off" spellcheck="false" placeholder="Torn API key" style="-webkit-text-security:disc">' +
+      '<button type="submit">Save key</button>' + (getKey() ? '<button type="button" id="hubKeyForget">Forget key</button>' : '') +
+      '<button type="button" id="hubKeyClose">Close</button></form>';
+    document.body.appendChild(o);
+    var inp = o.querySelector("#hubKeyIn"); inp.focus();
+    o.querySelector("form").addEventListener("submit", function (ev) { ev.preventDefault(); var v = inp.value.trim(); if (v) { setKey(v); location.reload(); } });
+    o.querySelector("#hubKeyClose").addEventListener("click", function () { o.remove(); });
+    var fg = o.querySelector("#hubKeyForget");
+    if (fg) fg.addEventListener("click", function () { setKey(""); location.reload(); });
+  }
   function askCode() {
     return new Promise(function (resolve) {
       var o = document.createElement("div"); o.className = "hubgate";
@@ -107,15 +135,18 @@
     var nav = document.createElement("nav"); nav.className = "hubnav";
     nav.innerHTML = '<div class="hn-in"><a class="hn-logo" href="index.html" aria-label="Home"><span class="hn-orb"></span>' +
       '<span class="hn-lt">Torn<b>Hub</b></span></a><div class="hn-links">' + items.map(link).join("") +
-      '</div><div class="hn-sp"></div><button class="hn-lock" type="button" title="Forget the access code on this browser">Lock</button>' +
+      '</div><div class="hn-sp"></div><button class="hn-lock hn-key" type="button" title="Set or change your Torn API key">Key</button>' +
+      '<button class="hn-lock hn-out" type="button" title="Forget the access code on this browser">Lock</button>' +
       '<button class="hn-burger" type="button" aria-label="Open menu" aria-expanded="false">&#9776;</button></div>' +
       '<div class="hn-drawer">' + items.map(link).join("") + "</div>";
     document.body.insertBefore(nav, document.body.firstChild);
-    nav.querySelector(".hn-lock").addEventListener("click", forgetCode);
+    nav.querySelector(".hn-out").addEventListener("click", forgetCode);
+    nav.querySelector(".hn-key").addEventListener("click", askKey);
     var dr = nav.querySelector(".hn-drawer"), bg = nav.querySelector(".hn-burger");
     bg.addEventListener("click", function () { var o = dr.classList.toggle("open"); bg.setAttribute("aria-expanded", o); });
   }
 
-  window.TornHub = { SECTIONS: SECTIONS, fetchView: fetchView, postView: postView, getCode: getCode, setCode: setCode, forgetCode: forgetCode };
+  window.TornHub = { SECTIONS: SECTIONS, fetchView: fetchView, postView: postView, getCode: getCode, setCode: setCode, forgetCode: forgetCode,
+                     getKey: getKey, setKey: setKey, askKey: askKey };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build); else build();
 })();

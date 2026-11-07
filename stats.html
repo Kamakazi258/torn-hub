@@ -189,6 +189,8 @@
   .statchip.end{background:rgba(226,199,140,.16);color:#e2c78c}
   .statchip.man{background:rgba(135,201,166,.16);color:#7ec9a6}
   .card h3 .seg{margin-left:auto}
+  .jlbl{display:inline-flex;align-items:center;gap:8px}.jlbl .jicon{flex:0 0 18px;color:var(--accent,#a9b0e6)}
+  @media(max-width:600px){.seg{display:flex;flex-wrap:wrap;max-width:100%}.seg button{padding:7px 10px}.card h3{flex-wrap:wrap}}
   .edutile{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px;cursor:pointer}
   .edutile:hover{border-color:var(--accent)}
   .edutile.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
@@ -1828,6 +1830,83 @@ function updateAwardPane(type){
 // ---- shell ----------------------------------------------------------------
 function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 // ---- job points: city (starter) jobs and company jobs ---------------------
+// job and company icons (drawn for TornHub, line style to match the other icons)
+const JOB_ICONS=[
+  ["army",'<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 8l1.2 2.5 2.8.3-2 1.9.5 2.8-2.5-1.4-2.5 1.4.5-2.8-2-1.9 2.8-.3z"/>'],
+  ["grocer",'<path d="M4 9h16l-1.5 10a2 2 0 01-2 1.7h-9a2 2 0 01-2-1.7z"/><path d="M8 9l3-5M16 9l-3-5M9 13v4M12 13v4M15 13v4"/>'],
+  ["casino",'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 8c-1.5 1.8-3 3-3 4.5a1.8 1.8 0 003 1.3 1.8 1.8 0 003-1.3c0-1.5-1.5-2.7-3-4.5zM12 14v3M10.5 17h3"/>'],
+  ["medical",'<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>'],
+  ["law",'<path d="M12 3v18M7 21h10M5 7h14M12 5l0 2"/><path d="M5 7l-3 6a3 3 0 006 0zM19 7l-3 6a3 3 0 006 0z"/>'],
+  ["education",'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6"/>'],
+  ["hair",'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 7.5L20 18M8.5 16.5L20 6"/>'],
+  ["flower",'<circle cx="12" cy="8" r="2.2"/><path d="M12 5.8c0-2.5 3-2.5 3 0M14.2 8c2.5 0 2.5 3 0 3M9.8 8c-2.5 0-2.5-3 0-3M12 10.2c0 2.5-3 2.5-3 0"/><path d="M12 11v10M12 17c-2-2-4-2-5-1M12 15c2-2 4-2 5-1"/>'],
+  ["dealership",'<path d="M3 16v-3l2-5a2 2 0 012-1.3h10A2 2 0 0119 8l2 5v3a1 1 0 01-1 1h-1M5 17H4a1 1 0 01-1-1M3 13h18"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M9.5 17h5"/>'],
+  ["clothing",'<path d="M8 3l4 2 4-2 5 4-3 3-2-1.5V21H8V8.5L6 10 3 7z"/>'],
+  ["gun",'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>'],
+  ["game",'<path d="M7 7h10a4 4 0 014 4v3a3 3 0 01-5.4 1.8L14 14h-4l-1.6 1.8A3 3 0 013 14v-3a4 4 0 014-4z"/><path d="M7.5 10v3M6 11.5h3M15.5 11h.01M17.5 13h.01"/>'],
+  ["candle",'<rect x="8" y="10" width="8" height="11" rx="1"/><path d="M12 10V8M12 3c1.5 1.6 2 2.6 2 3.3a2 2 0 01-4 0c0-.7.5-1.7 2-3.3z"/><path d="M8 14c1.5 0 1.5 1.5 3 1.5"/>'],
+  ["toy",'<circle cx="12" cy="9" r="4"/><circle cx="8" cy="5.5" r="1.8"/><circle cx="16" cy="5.5" r="1.8"/><path d="M8.5 12.5C6 14 5.5 17 6.5 20h11c1-3 .5-6-2-7.5"/><path d="M11 8.5h.01M13 8.5h.01M11.2 10.5c.5.4 1.1.4 1.6 0"/>'],
+  ["adult",'<path d="M12 20s-8-4.5-8-10a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 5.5-8 10-8 10z"/>'],
+  ["cyber",'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M15 8.5c1 0 1 2-1 2.5M9 8h4v3a2 2 0 01-4 0z"/>'],
+  ["grocery",'<path d="M4 9h16l-1.5 10a2 2 0 01-2 1.7h-9a2 2 0 01-2-1.7z"/><path d="M8 9l3-5M16 9l-3-5M9 13v4M12 13v4M15 13v4"/>'],
+  ["theat",'<path d="M3 8a2 2 0 002-2h14a2 2 0 002 2v2a2 2 0 000 4v2a2 2 0 00-2 2H5a2 2 0 00-2-2v-2a2 2 0 000-4z"/><path d="M9 6v2M9 11v2M9 16v2"/>'],
+  ["sweet",'<circle cx="12" cy="12" r="4"/><path d="M8.5 10L4 7v10l4.5-3M15.5 10L20 7v10l-4.5-3"/>'],
+  ["cruise",'<path d="M3 15l2 5h14l2-5z"/><path d="M6 15v-4h12v4M9 11V7h6v4M12 7V4"/><path d="M2 21c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"/>'],
+  ["televis",'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 3l4 4 4-4"/>'],
+  ["zoo",'<circle cx="7" cy="9" r="1.8"/><circle cx="11" cy="6" r="1.8"/><circle cx="15" cy="6.5" r="1.8"/><circle cx="18" cy="10" r="1.8"/><path d="M8.5 17.5c0-2.5 1.8-5 4-5s4 2.5 4 4.5-1.5 3-3 2.5-2-.5-3 0-2-.2-2-2z"/>'],
+  ["firework",'<path d="M12 12v9M12 3v3M12 12L6 6M12 12l6-6M12 12H4M12 12h8M12 12l-5 5M12 12l5 5"/><circle cx="12" cy="12" r="1.2"/>'],
+  ["property",'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10M10 20v-6h4v6"/>'],
+  ["furniture",'<path d="M7 3h10v8H7z"/><path d="M5 11h14v3H5zM7 14v7M17 14v7M7 18h10"/>'],
+  ["gas",'<path d="M4 21V5a2 2 0 012-2h6a2 2 0 012 2v16M3 21h12M6 8h6"/><path d="M14 10h2a2 2 0 012 2v5a1.5 1.5 0 003 0V9l-3-3"/>'],
+  ["music",'<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>'],
+  ["nightclub",'<path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 21h8M7 7h10"/>'],
+  ["pub",'<path d="M5 8h10v11a2 2 0 01-2 2H7a2 2 0 01-2-2z"/><path d="M15 11h2a2 2 0 012 2v2a2 2 0 01-2 2h-2M5 8a3 3 0 013-4 3 3 0 014 0 3 3 0 013 4M9 12v5M11.5 12v5"/>'],
+  ["gents",'<path d="M3 7l7 3.5v3L3 17zM21 7l-7 3.5v3l7 3.5z"/><rect x="10" y="10" width="4" height="4" rx="1"/>'],
+  ["restaurant",'<path d="M6 3v7a2 2 0 002 2h0a2 2 0 002-2V3M8 3v18M8 12v9"/><path d="M17 21V3c-2 1-3 4-3 8h3"/>'],
+  ["oil",'<path d="M12 3l-6 18M12 3l6 18M8 15h8M9.3 11h5.4M10.6 7h2.8M3 21h18"/>'],
+  ["fitness",'<path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"/>'],
+  ["mechanic",'<path d="M14.5 6.5a4 4 0 005 5l-9 9a2.1 2.1 0 01-3-3l9-9a4 4 0 01-2-2 4 4 0 015-5z"/><path d="M7 18.5h.01"/>'],
+  ["amusement",'<circle cx="12" cy="10" r="6"/><path d="M12 4v12M6 10h12M7.8 5.8l8.4 8.4M16.2 5.8l-8.4 8.4M9 21l3-5 3 5M7 21h10"/>'],
+  ["lingerie",'<path d="M12 6a2 2 0 10-2-2"/><path d="M12 6v1.5L3 15a1.5 1.5 0 001 2.7h16a1.5 1.5 0 001-2.7l-9-7.5"/>'],
+  ["meat",'<path d="M14.5 4a5.5 5.5 0 015.5 5.5c0 3-2.5 5.5-5.5 5.5-1.2 0-2 .3-2.8 1.1L9 18.8"/><path d="M14.5 4C11.5 4 9 6.5 9 9.5c0 1.2-.3 2-1.1 2.8L5.2 15"/><path d="M5.2 15L4 13.8a1.7 1.7 0 00-2.4 2.4l1.2 1.2-1 1a1.7 1.7 0 002.4 2.4l1-1 1.2 1.2a1.7 1.7 0 002.4-2.4L9 18.8"/>'],
+  ["farm",'<path d="M12 21V8M12 8c-2-1-3-3-3-5 2 0 3 2 3 5zM12 8c2-1 3-3 3-5-2 0-3 2-3 5zM12 13c-2-1-3-3-3-5 2 0 3 2 3 5zM12 13c2-1 3-3 3-5-2 0-3 2-3 5zM12 18c-2-1-3-3-3-5 2 0 3 2 3 5zM12 18c2-1 3-3 3-5-2 0-3 2-3 5z"/>'],
+  ["software",'<path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>'],
+  ["ladies",'<path d="M4 18h6.5c1.5 0 2.5-.6 3.5-1.6L19 11a2 2 0 00-2.8-2.8L12 12.5 7 6.5C5 9 4 13 4 18z"/><path d="M17 12.5V20"/>'],
+  ["security",'<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>'],
+  ["mining",'<g transform="rotate(-35 12 12)"><path d="M4.5 8.5Q12 2.5 19.5 8.5"/><path d="M12 5.2V20.5"/></g>'],
+  ["detective",'<circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L21 21"/>'],
+  ["logistics",'<path d="M2 6h12v10H2zM14 9h4l3 3.5V16h-7"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>']
+];
+function jobIcon(name){
+  const n=String(name||"").toLowerCase();
+  const hit=JOB_ICONS.find(([k])=>n.indexOf(k)>=0);
+  const inner=hit?hit[1]:'<rect x="3" y="7" width="18" height="12" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>';
+  return '<svg class="jicon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+inner+'</svg>';
+}
+
+// company specials (what job points buy), from Torn, kept for a day in this browser
+let COMPANY_TYPES=null;
+function loadCompanyTypes(){
+  try{ const c=JSON.parse(localStorage.getItem("tg_companies")||"null"); if(c&&Date.now()-c.t<86400000){ COMPANY_TYPES=c.d; return; } }catch(e){}
+  const key=window.TornHub&&TornHub.getKey?TornHub.getKey():"";
+  if(!key) return;
+  fetch("https://api.torn.com/torn/?selections=companies&key="+encodeURIComponent(key)).then(r=>r.json()).then(d=>{
+    if(!d||!d.companies) return;
+    COMPANY_TYPES=d.companies;
+    try{ localStorage.setItem("tg_companies",JSON.stringify({t:Date.now(),d:d.companies})); }catch(e){}
+    if(DATA) renderJobPoints();
+  }).catch(()=>{});
+}
+function specialsLine(typeId,pts){
+  const ct=COMPANY_TYPES&&COMPANY_TYPES[typeId]; if(!ct||!ct.specials) return "";
+  const list=Object.keys(ct.specials).map(n=>({name:n,cost:+ct.specials[n].cost||0,stars:+ct.specials[n].rating_required||0,effect:ct.specials[n].effect||""}))
+    .filter(x=>x.cost>0).sort((a,b)=>a.cost-b.cost);
+  if(!list.length) return "";
+  const can=list.filter(x=>x.cost<=pts), next=list.find(x=>x.cost>pts);
+  let h=can.length?"Can afford: "+can.map(x=>'<span title="'+escapeHtml(x.effect).replace(/"/g,"&quot;")+'">'+escapeHtml(x.name)+" ("+x.cost+", needs "+x.stars+"&#9733;)</span>").join(" &middot; "):"Cannot afford any special yet.";
+  if(next) h+=' <span style="color:var(--faint)">Next: '+escapeHtml(next.name)+" at "+next.cost+" points ("+(next.cost-pts)+" more)</span>";
+  return h;
+}
 const CITY_JOBS=[["army","Army"],["grocer","Grocer"],["casino","Casino"],["medical","Medical"],["law","Law"],["education","Education"]];
 function renderJobPoints(){
   const p=$("#tab-jobpoints"); p.innerHTML="";
@@ -1846,7 +1925,9 @@ function renderJobPoints(){
   mini.innerHTML="<div>Total <b>"+fmt(cityTot+compTot)+"</b></div><div>City jobs <b>"+fmt(cityTot)+"</b></div><div>Company jobs <b>"+fmt(compTot)+"</b></div>"+
     (job.company_name?"<div>Current job <b>"+job.company_name+(job.position?" · "+job.position:"")+"</b></div>":"");
   top.appendChild(mini);
-  top.appendChild(el("div","cardnote","Job points you have earned and not yet spent, per job. Spend them on that job's or company type's specials in Torn."));
+  top.appendChild(el("div","cardnote","Job points you have earned and not yet spent, per job. Spend them on that job's or company type's specials in Torn. "+
+    "A company special can only be used while you work at a company of that type with the star rating shown."+
+    (COMPANY_TYPES?"":(window.TornHub&&TornHub.getKey&&TornHub.getKey()?" Loading specials...":" Set your API key (Key, top right) to see which specials you can afford."))));
   p.appendChild(top);
 
   const grid=el("div","grid g2"); grid.style.marginTop="16px";
@@ -1856,11 +1937,12 @@ function renderJobPoints(){
     const max=Math.max(1,...list.map(x=>x.pts));
     list.forEach(x=>{
       const cur=isCompany&&x.id===curType;
-      const label=x.name+(cur?' <span class="pill accent" style="margin-left:6px">Current job</span>':'');
+      const label='<span class="jlbl">'+jobIcon(x.name)+'<span>'+x.name+'</span></span>'+(cur?' <span class="pill accent" style="margin-left:6px">Current job</span>':'');
       const r=statRow("",fmt(x.pts),x.pts/max*100,x.pts?(cur?"":"good"):"");
       r.querySelector(".lbl").innerHTML=label;
       if(!x.pts) r.style.opacity=".55";
       c.appendChild(r);
+      if(isCompany){ const sl=specialsLine(x.id,x.pts); if(sl){ const n=el("div","cardnote",sl); n.style.margin="-4px 0 8px"; c.appendChild(n); } }
     });
     return c;
   }
@@ -1896,7 +1978,7 @@ async function load(force){
   catch(e){ DATA={_error:"Could not reach Torn: "+e.message+". Press Refresh to try again."}; }
   renderErrors(); renderProfile();
   renderOverview(); renderGrowth(); renderCrimes();
-  renderAwards(); renderEducation(); renderJobPoints();
+  renderAwards(); renderEducation(); loadCompanyTypes(); renderJobPoints();
   const t=DATA&&DATA.fetched_at?new Date(DATA.fetched_at*1000).toLocaleString():"—";
   $("#foot").innerHTML="Data fetched "+t+(DATA&&DATA.cached?" (cached)":"")+
     " · read live from Torn through your private data service.";

@@ -122,6 +122,15 @@
   .lh{display:block;color:var(--faint);font-size:11px;line-height:1.3;margin-top:2px}
   .lh.win{color:var(--good)} .lh.loss{color:var(--bad)}
   .d.pinned{background:var(--idle)} .d.archive{background:#4e4b60}
+  .chainbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .chainbar .cv{font:700 22px var(--display)}
+  .chainbar .cl{font:600 15px var(--display);font-variant-numeric:tabular-nums}
+  .chainbar .cl.hot{color:var(--bad)}
+  .hitnext{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:12px}
+  .hn{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+  .hn .who{flex:1;min-width:0}
+  .hn .who a{font-weight:600;text-decoration:none}
+  .hn .who small{display:block;color:var(--faint);font-size:11.5px}
   .toast{position:fixed;right:16px;bottom:16px;z-index:3000;display:grid;gap:8px}
   .toast div{background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:13px}
   .toast a{color:var(--accent);font-weight:600}
@@ -199,6 +208,7 @@
   <div class="err" id="err"></div>
 
   <div class="summary" id="summary"></div>
+  <div class="card hidden" id="chainCard"></div>
   <div class="toast" id="toast"></div>
 
   <div class="filters">
@@ -302,7 +312,7 @@
     obs: load('tg_obs', {}) || {},            // take-off windows seen by this page
     facAt: {}, queue: [], loaded: false
   };
-  var prefs = Object.assign({ okay: false, hideInactive: false, days: 30, archiveDays: 60, sort: {}, strongOpen: false, archiveOpen: false }, load('tg_prefs', {}) || {});
+  var prefs = Object.assign({ chainOpen: false, okay: false, hideInactive: false, days: 30, archiveDays: 60, sort: {}, strongOpen: false, archiveOpen: false }, load('tg_prefs', {}) || {});
   S.hist = load('tg_hist', {}) || {}; S.histAt = 0; S.histFrom = load('tg_hist_from', 0) || 0; S.histState = 'none'; S.prevOk = {};
 
   // ---------------------------------------------------------------- list storage (TornHub data service, with a browser copy as backup)
@@ -635,6 +645,47 @@
       S.prevOk[p.id] = ok;
     });
   }
+  // ---------------------------------------------------------------- chain helper
+  S.chain = null; S.chainAt = 0;
+  function loadChain() {
+    S.chainAt = now();
+    api('/faction/chain').then(function (d) {
+      var c = d && d.chain; if (!c) return;
+      var left = Number(c.timeout || 0); if (left > 1e9) left = left - now();
+      S.chain = { current: Number(c.current || 0), max: Number(c.max || 0), left: Math.max(0, left), cooldown: Number(c.cooldown || 0), got: now() };
+      renderChain();
+    }).catch(function () { S.chain = null; renderChain(); });
+  }
+  function chainLeft() { return S.chain ? Math.max(0, S.chain.left - (now() - S.chain.got)) : 0; }
+  function chainTargets() {
+    return S.list.players.filter(function (p) { var d = S.data[p.id]; return d && statusInfo(d).ok && !tooStrong(p.id) && !archived(p); })
+      .sort(function (a, b) {
+        var fa = S.ff[a.id], fb = S.ff[b.id];
+        var x = fa && fa.fair_fight != null ? Number(fa.fair_fight) : 99, y = fb && fb.fair_fight != null ? Number(fb.fair_fight) : 99;
+        return x - y || ((S.data[a.id] || {}).level || 0) - ((S.data[b.id] || {}).level || 0);
+      }).slice(0, 8);
+  }
+  function renderChain() {
+    var box = $('chainCard'); if (!box) return;
+    var c = S.chain, active = c && (c.current > 0 || chainLeft() > 0);
+    if (!c || (!active && !prefs.chainOpen)) {
+      box.classList.toggle('hidden', !c);
+      if (c) box.innerHTML = '<div class="chainbar"><span class="note" style="margin:0">No chain running.</span><span class="spacer"></span><button class="btn small" data-chain="1">Show chain helper</button></div>';
+      return;
+    }
+    box.classList.remove('hidden');
+    var list = chainTargets();
+    box.innerHTML = '<div class="chainbar"><div><div class="note" style="margin:0">Faction chain</div><div class="cv">' + fmtNum(c.current) + (c.max ? ' <span class="note">/ ' + fmtNum(c.max) + '</span>' : '') + '</div></div>' +
+      '<div><div class="note" style="margin:0">Time left</div><div class="cl" id="chainLeft">' + (active ? clock(chainLeft()) : '-') + '</div></div>' +
+      '<span class="spacer"></span>' + (!active ? '<button class="btn small ghost" data-chain="0">Hide</button>' : '') + '</div>' +
+      '<div class="note" style="margin-top:8px">Hit next: Okay targets you can beat, easiest first (lowest FF).</div>' +
+      (list.length ? '<div class="hitnext">' + list.map(function (p) {
+        var d = S.data[p.id] || {}, f = S.ff[p.id];
+        return '<div class="hn" data-id="' + p.id + '"><div class="who"><a href="https://www.torn.com/profiles.php?XID=' + p.id + '" target="_blank" rel="noopener">' + esc(d.name || p.id) + '</a>' +
+          '<small>Lv ' + (d.level || '?') + ' \u00b7 FF ' + (f && f.fair_fight != null ? Number(f.fair_fight).toFixed(2) : '-') + '</small></div>' +
+          '<a class="atk" href="https://www.torn.com/page.php?sid=attack&amp;user2ID=' + p.id + '" target="_blank" rel="noopener">Attack</a></div>';
+      }).join('') + '</div>' : '<div class="note">No Okay targets right now.</div>');
+  }
   function tooStrong(id) { var f = S.ff[id]; return S.myTotal && f && f.bs_estimate != null && Number(f.bs_estimate) > S.myTotal; }
 
   // ---------------------------------------------------------------- render
@@ -751,6 +802,7 @@
         (prefs.archiveOpen ? table(groups.archive, 'archive') : '') + '</div>';
     }
     $('panel').innerHTML = ph;
+    renderChain();
     var viaFac = Object.keys(followedIds()).length, solo = S.list.players.length - viaFac - groups.archive.length;
     var cyc = solo ? Math.ceil(solo / PER_MIN) : 0;
     $('cycle').textContent = !S.key ? '' : solo ? 'Each player is checked about every ' + (cyc <= 1 ? 'minute' : cyc + ' minutes') + (viaFac ? '; followed factions every minute' : '') : (viaFac ? 'Followed factions are checked every minute' : '');
@@ -796,6 +848,8 @@
     var unf = t.closest && t.closest('[data-unf]');
     if (unf) { unfollow(Number(unf.getAttribute('data-unf'))); return; }
     if (t.closest && t.closest('#strongHead')) { prefs.strongOpen = !prefs.strongOpen; save('tg_prefs', prefs); render(); return; }
+    var ch = t.closest && t.closest('[data-chain]');
+    if (ch) { prefs.chainOpen = ch.getAttribute('data-chain') === '1'; save('tg_prefs', prefs); renderChain(); return; }
     if (t.closest && t.closest('#archiveHead')) { prefs.archiveOpen = !prefs.archiveOpen; save('tg_prefs', prefs); render(); return; }
     var pin = t.closest && t.closest('[data-pin]');
     if (pin) { var pp = findPlayer(pin.getAttribute('data-pin')); if (pp) { pp.pin = !pp.pin; Store.save(); render(); } return; }
@@ -837,7 +891,7 @@
   $('refreshBtn').addEventListener('click', function () { S.facAt = {}; S.queue = S.list.players.map(function (p) { return p.id; }); loadFF(); msg('Refreshing everyone in turns...'); });
   $('saveKey').addEventListener('click', function () {
     var k = $('keyInput').value.trim(); if (!k) return;
-    S.key = k; save('torn_key', k); $('keyInput').value = ''; $('keyCard').classList.add('hidden'); showErr(''); loadFF(); render();
+    S.key = k; save('torn_key', k); save('kw_key', k); $('keyInput').value = ''; $('keyCard').classList.add('hidden'); showErr(''); loadFF(); render();
   });
   $('keyInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('saveKey').click(); });
 
@@ -852,6 +906,8 @@
     if (!S.loaded) return;
     if (S.key) budget = Math.min(budget + PER_MIN / 60, 3);   // request allowance builds up each second
     if (S.key && now() - S.histAt > 120 && budget >= 1) { budget -= 1; loadHistory(); }   // your attack log, every 2 minutes
+    if (S.key && now() - S.chainAt > 20 && budget >= 1) { budget -= 1; loadChain(); }     // faction chain, every 20 seconds
+    var cl = $('chainLeft'); if (cl && S.chain) { var lt = chainLeft(); cl.textContent = clock(lt); cl.classList.toggle('hot', lt > 0 && lt < 60); }
     pump(); tick(); checkAlerts();
     if (S.key && now() - S.ffAt > FF_EVERY) loadFF();
     var onBtn = document.querySelector('#panel a:hover, #panel button:hover');

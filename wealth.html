@@ -80,6 +80,8 @@
   .tile .s{font-size:12px; color:var(--muted); margin-top:2px}
 
   .tabs{display:flex; gap:8px; margin-bottom:16px}
+  @media(max-width:600px){.tabs{flex-wrap:wrap; gap:6px}.tabs .tab{padding:7px 11px}}
+  @media(max-width:600px){#priceAlerts .pa input{width:70px}#priceAlerts .pa th,#priceAlerts .pa td{padding:6px 4px}#priceAlerts .pa th:nth-child(2),#priceAlerts .pa td:nth-child(2){display:none}}
   .tab{font-family:var(--disp); font-size:13px; font-weight:500; letter-spacing:.02em; cursor:pointer;
     display:inline-flex; align-items:center; gap:7px;
     padding:9px 16px; border-radius:12px; color:var(--muted); border:1px solid transparent}
@@ -536,6 +538,7 @@
     background:linear-gradient(180deg,#d7dbf5,#b7bdea);transition:left .28s cubic-bezier(.3,.9,.3,1),width .28s cubic-bezier(.3,.9,.3,1),opacity .2s}
   .seg.sub{background:transparent;border-color:var(--edge)}
   .seg.sub .segbtn{font-size:12px;padding:5px 12px}
+  @media(max-width:600px){.seg.primary{flex-wrap:wrap}.seg.primary .segbtn{padding:7px 9px;font-size:12px}}
   .seg.sub .segthumb{background:var(--glass2,rgba(180,186,230,.16))}
   .seg.sub .segbtn.active{color:var(--ink)}
   .segrow{display:flex;align-items:center;gap:10px;margin:0 0 16px;flex-wrap:wrap}
@@ -584,6 +587,18 @@
   .err{padding:18px; color:var(--loss); font-weight:600; font-size:13px}
   footer{margin-top:26px; font-size:11px; color:var(--muted); text-align:center; letter-spacing:.02em}
   footer .ver{opacity:.7}
+  .pa{margin-top:0;background:var(--glass);border:1px solid var(--edge);border-radius:16px;padding:14px 16px}
+  .pa h4{margin:0;display:flex;align-items:center;gap:10px;font:600 14px var(--disp);color:var(--ink);cursor:pointer}
+  .pa h4 small{color:var(--muted);font:500 12px var(--body)}
+  .pa table{width:100%;border-collapse:collapse;margin-top:10px}
+  .pa th,.pa td{padding:6px 8px;border-bottom:1px solid var(--edge);font-size:12.5px;text-align:left;white-space:nowrap}
+  .pa th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .pa td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .pa input{width:96px;background:rgba(0,0,0,.25);border:1px solid var(--edge2);border-radius:8px;color:var(--ink);padding:4px 7px;font:12.5px var(--body)}
+  .pa .hit{color:var(--gold);font-weight:600}
+  .pa .tw{overflow-x:auto}
+  .patoast{position:fixed;right:16px;bottom:16px;z-index:3000;display:grid;gap:8px}
+  .patoast div{background:#171b2e;border:1px solid var(--gold);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 </style></head>
 <body data-section="wealth">
 <div class="app">
@@ -1069,7 +1084,7 @@ function renderPortfolio(rows, bankRate){
     let cards=''; gr.forEach((o,i)=>{ cards+=cardHtml(o,i); });
     panels+=`<div class="subpanel ${idx===0?'active':''}" id="subpanelP${g}"><div class="grid">${cards}</div></div>`;
   });
-  const views=[['stocks','Stocks'],['comp','Composition'],['income','Income'],['conc','Concentration']];
+  const views=[['stocks','Stocks'],['comp','Composition'],['income','Income'],['conc','Concentration'],['alerts','Price alerts']];
   const activeView=window._pview||'stocks';
   const vbar='<div class="seg primary" id="pseg">'+views.map(([v,lbl])=>
     `<button class="segbtn ${v===activeView?'active':''}" data-v="${v}" onclick="showPView('${v}')">${lbl}</button>`).join('')+'<span class="segthumb" id="psegthumb"></span></div>';
@@ -1077,7 +1092,9 @@ function renderPortfolio(rows, bankRate){
   const vComp=`<div class="pv ${activeView==='comp'?'active':''}" id="pv_comp">${summaryComp}</div>`;
   const vIncome=`<div class="pv ${activeView==='income'?'active':''}" id="pv_income">${incCard||'<div class="note">No cash-paying holdings yet.</div>'}</div>`;
   const vConc=`<div class="pv ${activeView==='conc'?'active':''}" id="pv_conc">${concCard||'<div class="note">No holdings to assess yet.</div>'}</div>`;
-  panel.innerHTML=ops+vbar+vStocks+vComp+vIncome+vConc;
+  const vAlerts=`<div class="pv ${activeView==='alerts'?'active':''}" id="pv_alerts"><div id="priceAlerts"></div></div>`;
+  panel.innerHTML=ops+vbar+vStocks+vComp+vIncome+vConc+vAlerts;
+  drawPriceAlerts();
   requestAnimationFrame(()=>{ positionThumb('pseg','psegthumb'); positionThumb('gseg','gsegthumb'); });
   if(activeView==='stocks') growBars('#panelP .bar>i');
   if(activeView==='income') growBars('#pv_income .incbarwrap>i');
@@ -1090,6 +1107,7 @@ function positionThumb(segId, thumbId){
   thumb.style.opacity='1';
   thumb.style.left=act.offsetLeft+'px';
   thumb.style.width=act.offsetWidth+'px';
+  thumb.style.top=act.offsetTop+'px'; thumb.style.height=act.offsetHeight+'px'; thumb.style.bottom='auto';
 }
 function compHover(i){
   const box=document.getElementById('pv_comp'); if(!box) return;
@@ -1102,7 +1120,7 @@ function compHover(i){
 }
 function showPView(v){
   window._pview=v;
-  const map={stocks:'pv_stocks',comp:'pv_comp',income:'pv_income',conc:'pv_conc'};
+  const map={stocks:'pv_stocks',comp:'pv_comp',income:'pv_income',conc:'pv_conc',alerts:'pv_alerts'};
   for(const k in map){ const el=document.getElementById(map[k]); if(el) el.classList.toggle('active', k===v); }
   const seg=document.getElementById('pseg');
   if(seg) seg.querySelectorAll('.segbtn').forEach(b=>b.classList.toggle('active', b.dataset.v===v));
@@ -1584,5 +1602,69 @@ window.addEventListener('resize',()=>{ clearTimeout(_rsz); _rsz=setTimeout(()=>{
   document.addEventListener('mousemove',e=>{ if(tip.style.display==='block') place(e); });
   document.addEventListener('mouseout',e=>{ if(e.target.closest('[data-tip]')) tip.style.display='none'; });
 })();
+
+// ---------------------------------------------------------------- stock price alerts (live prices straight from Torn with your key)
+const PA={prices:{},names:{},t:0,open:true,state:''};
+function paLoad(){ try{ return JSON.parse(localStorage.getItem('tornhub_price_alerts')||'{}')||{}; }catch(e){ return {}; } }
+function paSave(a){ try{ localStorage.setItem('tornhub_price_alerts',JSON.stringify(a)); }catch(e){} }
+function paBeep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value=740; g.gain.value=.08; o.start(); o.stop(c.currentTime+.35); }catch(e){} }
+function paNotify(txt){
+  paBeep();
+  let box=document.querySelector('.patoast'); if(!box){ box=document.createElement('div'); box.className='patoast'; document.body.appendChild(box); }
+  const d=document.createElement('div'); d.textContent=txt; box.appendChild(d); setTimeout(()=>d.remove(),30000);
+  try{ if(window.Notification&&Notification.permission==='granted') new Notification('TornHub price alert',{body:txt}); }catch(e){}
+}
+function paFetch(){
+  const key=window.TornHub&&TornHub.getKey?TornHub.getKey():'';
+  if(!key){ PA.state='nokey'; drawPriceAlerts(); return; }
+  fetch('https://api.torn.com/v2/torn/stocks?key='+encodeURIComponent(key)).then(r=>r.json()).then(d=>{
+    if(!d||!d.stocks){ PA.state='error'; drawPriceAlerts(); return; }
+    d.stocks.forEach(x=>{ PA.prices[x.acronym]=x.market&&x.market.price; PA.names[x.acronym]=x.name; });
+    PA.t=Date.now(); PA.state='ok'; paCheck(); drawPriceAlerts();
+  }).catch(()=>{ PA.state='error'; drawPriceAlerts(); });
+}
+function paCheck(){
+  const a=paLoad(); let changed=false;
+  Object.keys(a).forEach(k=>{
+    const p=PA.prices[k], r=a[k]; if(p==null) return;
+    if(r.below){ if(p<=r.below&&!r.fb){ r.fb=1; changed=true; paNotify(k+' is $'+p.toLocaleString()+', at or below your $'+Number(r.below).toLocaleString()+' alert'); } else if(p>r.below*1.005&&r.fb){ r.fb=0; changed=true; } }
+    if(r.above){ if(p>=r.above&&!r.fa){ r.fa=1; changed=true; paNotify(k+' is $'+p.toLocaleString()+', at or above your $'+Number(r.above).toLocaleString()+' alert'); } else if(p<r.above*.995&&r.fa){ r.fa=0; changed=true; } }
+  });
+  if(changed) paSave(a);
+}
+function drawPriceAlerts(){
+  const box=document.getElementById('priceAlerts'); if(!box) return;
+  const a=paLoad(), set=Object.keys(a).filter(k=>a[k].below||a[k].above);
+  let head='<h4 id="paHead">Price alerts <small>'+(set.length?set.length+' set':'none set')+(PA.t?' · prices '+new Date(PA.t).toLocaleTimeString():'')+' · '+(PA.open?'show only stocks with alerts':'show all stocks')+'</small></h4>';
+  if(PA.state==='nokey'){ box.innerHTML='<div class="pa">'+head+'<div class="note" style="margin-top:8px">Set your Torn API key (Key, top right) to get live prices and alerts.</div></div>'; paWire(); return; }
+  const keys=Object.keys(PA.prices).sort();
+  const show=PA.open?keys:set;
+  let rows=show.map(k=>{
+    const r=a[k]||{}, p=PA.prices[k];
+    const hit=(r.below&&p<=r.below)||(r.above&&p>=r.above);
+    return '<tr><td><b>'+k+'</b></td><td>'+(PA.names[k]||'')+'</td><td class="n'+(hit?' hit':'')+'">'+(p!=null?'$'+p.toLocaleString():'-')+'</td>'+
+      '<td><input type="number" step="0.01" min="0" data-pa="'+k+'" data-w="below" value="'+(r.below||'')+'" placeholder="Below $"></td>'+
+      '<td><input type="number" step="0.01" min="0" data-pa="'+k+'" data-w="above" value="'+(r.above||'')+'" placeholder="Above $"></td></tr>';
+  }).join('');
+  const table=show.length?'<div class="tw"><table><thead><tr><th>Stock</th><th>Name</th><th style="text-align:right">Price</th><th>Alert below</th><th>Alert above</th></tr></thead><tbody>'+rows+'</tbody></table></div>':
+    '<div class="note" style="margin-top:8px">No alerts yet. Click "show all stocks" and type a price under any stock. You get a sound and a pop-up while TornHub is open.</div>';
+  box.innerHTML='<div class="pa">'+head+table+'</div>';
+  paWire();
+}
+function paWire(){
+  const h=document.getElementById('paHead'); if(h) h.onclick=()=>{ PA.open=!PA.open; drawPriceAlerts(); };
+  document.querySelectorAll('#priceAlerts input[data-pa]').forEach(inp=>{
+    inp.onchange=()=>{
+      const a=paLoad(), k=inp.dataset.pa, w=inp.dataset.w, v=parseFloat(inp.value);
+      a[k]=a[k]||{}; if(v>0) a[k][w]=v; else delete a[k][w];
+      if(w==='below') a[k].fb=0; else a[k].fa=0;
+      if(!a[k].below&&!a[k].above) delete a[k];
+      paSave(a);
+      try{ if(v>0&&window.Notification&&Notification.permission==='default') Notification.requestPermission(); }catch(e){}
+      paCheck();
+    };
+  });
+}
+paFetch(); setInterval(paFetch,60000);
 </script>
 </body></html>

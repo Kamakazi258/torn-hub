@@ -312,6 +312,13 @@
   .phase{width:128px;height:128px;border-radius:50%;position:relative;overflow:hidden;background:radial-gradient(circle at 38% 34%,#f6f2ff,#c9c0ee 55%,#8f84c8);box-shadow:0 0 60px rgba(160,150,220,.35)}
   .phase::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--bg);transform:translate(38%,-22%)}
   @media(max-width:640px){.hero{grid-template-columns:1fr}.phase{display:none}}
+  .alerts{display:flex;flex-wrap:wrap;gap:8px;margin:-18px 0 30px}
+  .al{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border2);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:13px;color:var(--muted)}
+  .al b{color:var(--text);font-weight:600}
+  .al .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+  .al.go{border-color:rgba(135,201,166,.45);color:var(--text)} .al.go .dot{background:var(--good)}
+  .al.warn{border-color:rgba(226,199,140,.45);color:var(--text)} .al.warn .dot{background:var(--warn)}
+  .al.key{cursor:pointer}
   .sechead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
   .sechead h2{font:600 15px var(--display);margin:0;letter-spacing:.3px}
   .sechead small{color:var(--faint);font-size:12.5px}
@@ -344,6 +351,7 @@
     </div>
     <div class="phase" aria-hidden="true"></div>
   </div>
+  <div class="alerts" id="alerts"></div>
   <div class="sechead"><h2>Sections</h2><small id="secCount"></small></div>
   <div class="tiles" id="tiles"></div>
 </div>
@@ -360,6 +368,49 @@ $("#tiles").innerHTML=S.map(s=>'<a class="tile" href="'+s.href+'"><span class="g
   '<div class="chips">'+s.chips.map(c=>'<span class="chip">'+c+'</span>').join("")+'</div></a>').join("")+
   '<div class="tile soon"><div class="tic">✨</div><div><h3>More coming</h3><p>New sections will appear here and in the top menu.</p></div></div>';
 $("#secCount").textContent=S.length+" sections";
+// ---- things that need you now: bars, cooldowns, education and bank (straight from Torn with your key)
+function dur(s){ s=Math.max(0,Math.round(s)); const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+  return d?d+"d "+h+"h":h?h+"h "+m+"m":m+"m"; }
+let AL=null;
+function loadAlerts(){
+  const key=TornHub.getKey?TornHub.getKey():"";
+  const box=$("#alerts");
+  if(!key){ box.innerHTML='<span class="al key" id="alKey"><span class="dot"></span>Set your Torn API key to see energy, cooldowns, education and bank reminders here</span>';
+    $("#alKey").onclick=()=>TornHub.askKey(); return; }
+  const get=p=>fetch("https://api.torn.com/v2"+p+(p.indexOf("?")<0?"?":"&")+"key="+encodeURIComponent(key)).then(r=>r.json());
+  Promise.all([get("/user/bars"),get("/user/cooldowns"),get("/user/education"),get("/user/money")]).then(r=>{
+    if(r.some(x=>x&&x.error)){ const e=r.find(x=>x&&x.error).error; box.innerHTML='<span class="al warn"><span class="dot"></span>Torn: '+escapeHtml(e.error||"error")+'</span>'; return; }
+    AL={t:Date.now()/1000,bars:r[0].bars||{},cd:r[1].cooldowns||{},edu:r[2].education||{},money:r[3].money||{}};
+    drawAlerts();
+  }).catch(()=>{});
+}
+function drawAlerts(){
+  if(!AL) return;
+  const now=Date.now()/1000, gone=now-AL.t, out=[];
+  const add=(cls,txt,sort)=>out.push({cls,txt,sort});
+  [["energy","Energy"],["nerve","Nerve"]].forEach(([k,n])=>{
+    const b=AL.bars[k]; if(!b) return;
+    const left=(b.full_time!=null?b.full_time:b.fulltime||0)-gone;
+    if(b.current>=b.maximum||left<=0) add("go","<b>"+n+" full</b> ("+b.maximum+")",0);
+    else add("","<b>"+n+"</b> "+b.current+"/"+b.maximum+", full in "+dur(left),2);
+  });
+  [["drug","Drug"],["booster","Booster"],["medical","Medical"]].forEach(([k,n])=>{
+    const v=AL.cd[k]; if(v==null) return;
+    const left=v-gone;
+    if(left<=0) add("go","<b>"+n+" cooldown</b> ready",0);
+    else if(k!=="medical") add("","<b>"+n+" cooldown</b> "+dur(left),3);
+  });
+  const cur=AL.edu.current;
+  if(!cur) add("warn","<b>No course running</b>, start one",1);
+  else { const left=(cur.until||0)-now; add(left<=0?"go":"",left<=0?"<b>Course finished</b>":"<b>Course</b> ends in "+dur(left),left<=0?0:4); }
+  const cb=AL.money.city_bank||{};
+  if(!cb.amount) add("warn","<b>No bank investment</b>",1);
+  else { const left=(cb.until||0)-now; add(left<=0?"go":"",left<=0?"<b>Bank investment finished</b>, collect $"+fmt(cb.amount+(cb.profit||0)):"<b>Bank</b> $"+fmt(cb.amount)+" ends in "+dur(left),left<=0?0:5); }
+  out.sort((a,b)=>a.sort-b.sort);
+  $("#alerts").innerHTML=out.map(a=>'<span class="al '+a.cls+'"><span class="dot"></span>'+a.txt+'</span>').join("");
+}
+loadAlerts(); setInterval(loadAlerts,120000); setInterval(drawAlerts,30000);
+
 TornHub.fetchView("profile").then(d=>{
   if(!d||d.error) return;
   const p=d.profile||{}; if(p.name) $("#heroName").textContent=p.name;
