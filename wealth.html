@@ -81,7 +81,6 @@
 
   .tabs{display:flex; gap:8px; margin-bottom:16px}
   @media(max-width:600px){.tabs{flex-wrap:wrap; gap:6px}.tabs .tab{padding:7px 11px}}
-  @media(max-width:600px){#priceAlerts .pa input{width:70px}#priceAlerts .pa th,#priceAlerts .pa td{padding:6px 4px}#priceAlerts .pa th:nth-child(2),#priceAlerts .pa td:nth-child(2){display:none}}
   .tab{font-family:var(--disp); font-size:13px; font-weight:500; letter-spacing:.02em; cursor:pointer;
     display:inline-flex; align-items:center; gap:7px;
     padding:9px 16px; border-radius:12px; color:var(--muted); border:1px solid transparent}
@@ -588,17 +587,49 @@
   footer{margin-top:26px; font-size:11px; color:var(--muted); text-align:center; letter-spacing:.02em}
   footer .ver{opacity:.7}
   .pa{margin-top:0;background:var(--glass);border:1px solid var(--edge);border-radius:16px;padding:14px 16px}
-  .pa h4{margin:0;display:flex;align-items:center;gap:10px;font:600 14px var(--disp);color:var(--ink);cursor:pointer}
-  .pa h4 small{color:var(--muted);font:500 12px var(--body)}
-  .pa table{width:100%;border-collapse:collapse;margin-top:10px}
-  .pa th,.pa td{padding:6px 8px;border-bottom:1px solid var(--edge);font-size:12.5px;text-align:left;white-space:nowrap}
-  .pa th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
-  .pa td.n{text-align:right;font-variant-numeric:tabular-nums}
-  .pa input{width:96px;background:rgba(0,0,0,.25);border:1px solid var(--edge2);border-radius:8px;color:var(--ink);padding:4px 7px;font:12.5px var(--body)}
-  .pa .hit{color:var(--gold);font-weight:600}
-  .pa .tw{overflow-x:auto}
+  .pa h4{margin:0 0 4px;font:600 15px var(--disp);color:var(--ink)}
+  .pa .pasub{color:var(--muted);font-size:12px;margin-bottom:12px}
+  .pactl{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .pactl input,.pactl select{background:rgba(0,0,0,.25);border:1px solid var(--edge2);border-radius:9px;color:var(--ink);padding:7px 10px;font:13px var(--body)}
+  .pactl input{flex:1 1 180px;min-width:0}
+  .pactl select option{background:#171b2e}
+  .parow{display:grid;grid-template-columns:minmax(0,1fr) 96px 120px 190px 150px 38px;gap:12px;align-items:center;padding:10px 4px;border-top:1px solid var(--edge)}
+  .parow.head{border-top:0;padding-top:0;color:var(--muted);font:600 11px var(--body);text-transform:uppercase;letter-spacing:.04em}
+  .parow.locked{background:rgba(233,213,162,.04)}
+  .pastock{display:flex;align-items:center;gap:10px;min-width:0}
+  .pastock .ic{width:34px;height:34px;border-radius:9px}
+  .pastock .ic .mono{font-size:11px}
+  .paname{min-width:0}
+  .paname b{color:var(--ink);font:600 13.5px var(--disp)}
+  .paname .full{color:var(--muted);font-size:12px;margin-left:6px}
+  .paname .ben{color:var(--muted);font-size:11.5px;margin-top:2px;line-height:1.35}
+  .paprice{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+  .paprice.hit{color:var(--gold)}
+  .pacost{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .pacost small,.paal small{display:block;color:var(--muted);font-size:11px;font-weight:400}
+  .paal input{width:92px;background:rgba(0,0,0,.25);border:1px solid var(--edge2);border-radius:8px;color:var(--ink);padding:5px 7px;font:12.5px var(--body)}
+  .paal .q{background:none;border:1px solid var(--edge2);color:var(--muted);border-radius:7px;padding:3px 6px;font:11px var(--body);cursor:pointer;margin-left:4px}
+  .paal .q:hover{color:var(--ink)}
+  .paal small.near{color:var(--gold)}
+  .paal small.done{color:var(--gold);font-weight:600}
+  .palock{background:none;border:1px solid var(--edge2);border-radius:9px;width:34px;height:34px;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center}
+  .palock.on{border-color:var(--gold);color:var(--gold)}
+  .palock svg{width:16px;height:16px}
+  .lockic{display:inline-block;width:12px;height:12px;color:var(--gold);margin-left:6px;vertical-align:-1px}
+  .pagrp{margin:14px 0 2px;color:var(--muted);font:600 11px var(--body);letter-spacing:.06em;text-transform:uppercase}
   .patoast{position:fixed;right:16px;bottom:16px;z-index:3000;display:grid;gap:8px}
   .patoast div{background:#171b2e;border:1px solid var(--gold);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  @media(max-width:860px){
+    .parow{grid-template-columns:minmax(0,1fr) auto 38px;gap:8px 10px}
+    .parow.head{display:none}
+    .parow .pacost{grid-column:1 / -1;text-align:left;display:flex;gap:6px;align-items:baseline}
+    .parow .pacost small{display:inline}
+    .parow .paal{grid-column:span 1}
+    .parow .paal.ab{grid-column:2 / -1}
+    .parow .palock{grid-row:1;grid-column:3}
+    .paal small{margin-top:2px}
+  }
+  @media(max-width:600px){.paal input{width:74px}.paname .full{display:none}}
 </style></head>
 <body data-section="wealth">
 <div class="app">
@@ -1603,10 +1634,19 @@ window.addEventListener('resize',()=>{ clearTimeout(_rsz); _rsz=setTimeout(()=>{
   document.addEventListener('mouseout',e=>{ if(e.target.closest('[data-tip]')) tip.style.display='none'; });
 })();
 
-// ---------------------------------------------------------------- stock price alerts (live prices straight from Torn with your key)
-const PA={prices:{},names:{},t:0,open:true,state:''};
+// ---------------------------------------------------------------- stock price alerts (live prices and benefits straight from Torn with your key)
+const PA={prices:{},names:{},bonus:{},t:0,state:'',q:'',sort:'name',show:'all'};
 function paLoad(){ try{ return JSON.parse(localStorage.getItem('tornhub_price_alerts')||'{}')||{}; }catch(e){ return {}; } }
 function paSave(a){ try{ localStorage.setItem('tornhub_price_alerts',JSON.stringify(a)); }catch(e){} }
+function paLocks(){ try{ return JSON.parse(localStorage.getItem('tornhub_stock_locks')||'{}')||{}; }catch(e){ return {}; } }
+function paSaveLocks(l){ try{ localStorage.setItem('tornhub_stock_locks',JSON.stringify(l)); }catch(e){} }
+try{ const v=JSON.parse(localStorage.getItem('tornhub_pa_view')||'{}'); if(v.sort) PA.sort=v.sort; if(v.show) PA.show=v.show; }catch(e){}
+function paSaveView(){ try{ localStorage.setItem('tornhub_pa_view',JSON.stringify({sort:PA.sort,show:PA.show})); }catch(e){} }
+function paShort(v){ const a=Math.abs(v); return '$'+(a>=1e12?(v/1e12).toFixed(2)+'t':a>=1e9?(v/1e9).toFixed(2)+'b':a>=1e6?(v/1e6).toFixed(2)+'m':a>=1e3?(v/1e3).toFixed(1)+'k':Math.round(v)); }
+function paPrice(p){ return '$'+Number(p).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function paEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const PA_LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
+const PA_OPEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 017.5-2"/></svg>';
 function paBeep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value=740; g.gain.value=.08; o.start(); o.stop(c.currentTime+.35); }catch(e){} }
 function paNotify(txt){
   paBeep();
@@ -1618,51 +1658,111 @@ function paFetch(){
   const key=window.TornHub&&TornHub.getKey?TornHub.getKey():'';
   if(!key){ PA.state='nokey'; drawPriceAlerts(); return; }
   fetch('https://api.torn.com/v2/torn/stocks?key='+encodeURIComponent(key)).then(r=>r.json()).then(d=>{
-    if(!d||!d.stocks){ PA.state='error'; drawPriceAlerts(); return; }
-    d.stocks.forEach(x=>{ PA.prices[x.acronym]=x.market&&x.market.price; PA.names[x.acronym]=x.name; });
+    if(!d||!d.stocks){ PA.state='error'; PA.err=d&&d.error&&d.error.error; drawPriceAlerts(); return; }
+    d.stocks.forEach(x=>{ PA.prices[x.acronym]=x.market&&x.market.price; PA.names[x.acronym]=x.name; PA.bonus[x.acronym]=x.bonus||null; });
     PA.t=Date.now(); PA.state='ok'; paCheck(); drawPriceAlerts();
   }).catch(()=>{ PA.state='error'; drawPriceAlerts(); });
 }
 function paCheck(){
-  const a=paLoad(); let changed=false;
+  const a=paLoad(), locks=paLocks(); let changed=false;
   Object.keys(a).forEach(k=>{
     const p=PA.prices[k], r=a[k]; if(p==null) return;
-    if(r.below){ if(p<=r.below&&!r.fb){ r.fb=1; changed=true; paNotify(k+' is $'+p.toLocaleString()+', at or below your $'+Number(r.below).toLocaleString()+' alert'); } else if(p>r.below*1.005&&r.fb){ r.fb=0; changed=true; } }
-    if(r.above){ if(p>=r.above&&!r.fa){ r.fa=1; changed=true; paNotify(k+' is $'+p.toLocaleString()+', at or above your $'+Number(r.above).toLocaleString()+' alert'); } else if(p<r.above*.995&&r.fa){ r.fa=0; changed=true; } }
+    if(r.below){ if(p<=r.below&&!r.fb){ r.fb=1; changed=true; paNotify(k+' is '+paPrice(p)+', at or below your '+paPrice(r.below)+' alert'); } else if(p>r.below*1.005&&r.fb){ r.fb=0; changed=true; } }
+    if(r.above&&!locks[k]){ if(p>=r.above&&!r.fa){ r.fa=1; changed=true; paNotify(k+' is '+paPrice(p)+', at or above your '+paPrice(r.above)+' alert'); } else if(p<r.above*.995&&r.fa){ r.fa=0; changed=true; } }
   });
   if(changed) paSave(a);
 }
+function paBenefit(k){
+  const b=PA.bonus[k]; if(!b) return '';
+  const need=b.requirement?', needs '+Number(b.requirement).toLocaleString()+' shares':'';
+  return paEsc(b.description||'Benefit')+(b.passive?' (always on)':(b.frequency?' every '+b.frequency+' days':''))+need;
+}
+function paCost(k){ const b=PA.bonus[k], p=PA.prices[k]; return (b&&b.requirement&&p!=null)?b.requirement*p:null; }
+function paDist(k,w,r){ // percent the price still has to move to reach the alert
+  const p=PA.prices[k], v=r&&r[w]; if(!v||p==null) return null;
+  return w==='below'?(p-v)/p*100:(v-p)/p*100;
+}
+function paDistText(d){
+  if(d==null) return '';
+  if(d<=0) return '<small class="done">Reached</small>';
+  return '<small class="'+(d<=3?'near':'')+'">'+d.toFixed(1)+'% away</small>';
+}
 function drawPriceAlerts(){
   const box=document.getElementById('priceAlerts'); if(!box) return;
-  const a=paLoad(), set=Object.keys(a).filter(k=>a[k].below||a[k].above);
-  let head='<h4 id="paHead">Price alerts <small>'+(set.length?set.length+' set':'none set')+(PA.t?' · prices '+new Date(PA.t).toLocaleTimeString():'')+' · '+(PA.open?'show only stocks with alerts':'show all stocks')+'</small></h4>';
-  if(PA.state==='nokey'){ box.innerHTML='<div class="pa">'+head+'<div class="note" style="margin-top:8px">Set your Torn API key (Key, top right) to get live prices and alerts.</div></div>'; paWire(); return; }
-  const keys=Object.keys(PA.prices).sort();
-  const show=PA.open?keys:set;
-  let rows=show.map(k=>{
-    const r=a[k]||{}, p=PA.prices[k];
-    const hit=(r.below&&p<=r.below)||(r.above&&p>=r.above);
-    return '<tr><td><b>'+k+'</b></td><td>'+(PA.names[k]||'')+'</td><td class="n'+(hit?' hit':'')+'">'+(p!=null?'$'+p.toLocaleString():'-')+'</td>'+
-      '<td><input type="number" step="0.01" min="0" data-pa="'+k+'" data-w="below" value="'+(r.below||'')+'" placeholder="Below $"></td>'+
-      '<td><input type="number" step="0.01" min="0" data-pa="'+k+'" data-w="above" value="'+(r.above||'')+'" placeholder="Above $"></td></tr>';
-  }).join('');
-  const table=show.length?'<div class="tw"><table><thead><tr><th>Stock</th><th>Name</th><th style="text-align:right">Price</th><th>Alert below</th><th>Alert above</th></tr></thead><tbody>'+rows+'</tbody></table></div>':
-    '<div class="note" style="margin-top:8px">No alerts yet. Click "show all stocks" and type a price under any stock. You get a sound and a pop-up while TornHub is open.</div>';
-  box.innerHTML='<div class="pa">'+head+table+'</div>';
+  if(PA.state==='nokey'){ box.innerHTML='<div class="pa"><h4>Price alerts</h4><div class="note">Set your Torn API key (Key, top right) to get live prices and alerts.</div></div>'; return; }
+  if(!document.getElementById('paList')){
+    box.innerHTML='<div class="pa"><h4>Price alerts</h4><div class="pasub" id="paSub"></div>'+
+      '<div class="pactl"><input id="paQ" type="search" placeholder="Search stock name or code" autocomplete="off">'+
+      '<select id="paSort"><option value="name">Sort: name</option><option value="price">Sort: price, high to low</option><option value="cost">Sort: benefit cost, low to high</option><option value="dist">Sort: closest to alert</option></select>'+
+      '<select id="paShow"><option value="all">Show: all stocks</option><option value="set">Show: with alerts</option><option value="locked">Show: locked</option></select></div>'+
+      '<div id="paList"></div></div>';
+    const q=document.getElementById('paQ'); q.value=PA.q; q.oninput=()=>{ PA.q=q.value; paDrawList(true); };
+    const so=document.getElementById('paSort'); so.value=PA.sort; so.onchange=()=>{ PA.sort=so.value; paSaveView(); paDrawList(true); };
+    const sh=document.getElementById('paShow'); sh.value=PA.show; sh.onchange=()=>{ PA.show=sh.value; paSaveView(); paDrawList(true); };
+  }
+  paDrawList(false);
+}
+function paDrawList(force){
+  const list=document.getElementById('paList'); if(!list) return;
+  // do not redraw under you while you are typing a price
+  if(!force&&document.activeElement&&list.contains(document.activeElement)) return;
+  const a=paLoad(), locks=paLocks();
+  const set=Object.keys(a).filter(k=>a[k].below||(a[k].above&&!locks[k]));
+  const sub=document.getElementById('paSub');
+  if(sub) sub.innerHTML=(PA.state==='error'?'Could not reach Torn'+(PA.err?' ('+paEsc(PA.err)+')':'')+'. Trying again every minute. ':'')+
+    set.length+' alert'+(set.length===1?'':'s')+' set · '+Object.keys(locks).filter(k=>locks[k]).length+' locked'+
+    (PA.t?' · prices from Torn at '+new Date(PA.t).toLocaleTimeString():'')+' · you get a sound and a pop-up while TornHub is open';
+  const q=PA.q.trim().toLowerCase();
+  let keys=Object.keys(PA.prices).filter(k=>!q||k.toLowerCase().includes(q)||(PA.names[k]||'').toLowerCase().includes(q));
+  if(PA.show==='set') keys=keys.filter(k=>set.includes(k));
+  if(PA.show==='locked') keys=keys.filter(k=>locks[k]);
+  const near=k=>{ const r=a[k]||{}; const ds=[paDist(k,'below',r),locks[k]?null:paDist(k,'above',r)].filter(x=>x!=null); return ds.length?Math.min(...ds):Infinity; };
+  const cmp={name:(x,y)=>x.localeCompare(y),price:(x,y)=>(PA.prices[y]||0)-(PA.prices[x]||0),
+    cost:(x,y)=>(paCost(x)??Infinity)-(paCost(y)??Infinity),dist:(x,y)=>near(x)-near(y)||x.localeCompare(y)}[PA.sort]||((x,y)=>x.localeCompare(y));
+  const L=keys.filter(k=>locks[k]).sort(cmp), U=keys.filter(k=>!locks[k]).sort(cmp);
+  const head='<div class="parow head"><div>Stock and benefit</div><div style="text-align:right">Price</div><div style="text-align:right">Benefit cost</div><div>Alert below (buy)</div><div>Alert above (sell)</div><div></div></div>';
+  const row=k=>{
+    const r=a[k]||{}, p=PA.prices[k], lk=!!locks[k], cost=paCost(k);
+    const hit=(r.below&&p<=r.below)||(!lk&&r.above&&p>=r.above);
+    return '<div class="parow'+(lk?' locked':'')+'">'+
+      '<div class="pastock">'+iconHtml(k,'')+'<div class="paname"><b>'+k+'</b>'+(lk?'<span class="lockic" title="Locked: not selling">'+PA_LOCK+'</span>':'')+'<span class="full">'+paEsc(PA.names[k]||'')+'</span><div class="ben">'+paBenefit(k)+'</div></div></div>'+
+      '<div class="paprice'+(hit?' hit':'')+'">'+(p!=null?paPrice(p):'-')+'</div>'+
+      '<div class="pacost">'+(cost!=null?paShort(cost)+'<small>to get the benefit now</small>':'<small>-</small>')+'</div>'+
+      '<div class="paal"><input type="number" step="0.01" min="0" data-pa="'+k+'" data-w="below" value="'+(r.below||'')+'" placeholder="Below $">'+
+        '<button class="q" type="button" data-q="'+k+'" data-p="5" title="Set an alert 5% below the current price">-5%</button><button class="q" type="button" data-q="'+k+'" data-p="10" title="Set an alert 10% below the current price">-10%</button>'+paDistText(paDist(k,'below',r))+'</div>'+
+      '<div class="paal ab">'+(lk?'<small>Locked, no sell alert</small>':'<input type="number" step="0.01" min="0" data-pa="'+k+'" data-w="above" value="'+(r.above||'')+'" placeholder="Above $">'+paDistText(paDist(k,'above',r)))+'</div>'+
+      '<button class="palock'+(lk?' on':'')+'" type="button" data-lock="'+k+'" title="'+(lk?'Unlock: show the sell alert again':'Lock: I will not sell this stock')+'">'+(lk?PA_LOCK:PA_OPEN)+'</button>'+
+    '</div>';
+  };
+  let h='';
+  if(!keys.length) h='<div class="note">'+(PA.state==='ok'?'No stocks match.':'Loading prices from Torn...')+'</div>';
+  else{
+    h=head;
+    if(L.length) h+='<div class="pagrp">Locked, not selling ('+L.length+')</div>'+L.map(row).join('');
+    if(U.length) h+=(L.length?'<div class="pagrp">Other stocks ('+U.length+')</div>':'')+U.map(row).join('');
+  }
+  list.innerHTML=h;
   paWire();
 }
+function paSet(k,w,v){
+  const a=paLoad(); a[k]=a[k]||{};
+  if(v>0) a[k][w]=Math.round(v*100)/100; else delete a[k][w];
+  if(w==='below') a[k].fb=0; else a[k].fa=0;
+  if(!a[k].below&&!a[k].above) delete a[k];
+  paSave(a);
+  try{ if(v>0&&window.Notification&&Notification.permission==='default') Notification.requestPermission(); }catch(e){}
+  paCheck(); paDrawList(true);
+}
 function paWire(){
-  const h=document.getElementById('paHead'); if(h) h.onclick=()=>{ PA.open=!PA.open; drawPriceAlerts(); };
-  document.querySelectorAll('#priceAlerts input[data-pa]').forEach(inp=>{
-    inp.onchange=()=>{
-      const a=paLoad(), k=inp.dataset.pa, w=inp.dataset.w, v=parseFloat(inp.value);
-      a[k]=a[k]||{}; if(v>0) a[k][w]=v; else delete a[k][w];
-      if(w==='below') a[k].fb=0; else a[k].fa=0;
-      if(!a[k].below&&!a[k].above) delete a[k];
-      paSave(a);
-      try{ if(v>0&&window.Notification&&Notification.permission==='default') Notification.requestPermission(); }catch(e){}
-      paCheck();
-    };
+  document.querySelectorAll('#paList input[data-pa]').forEach(inp=>{
+    inp.onchange=()=>paSet(inp.dataset.pa,inp.dataset.w,parseFloat(inp.value));
+    inp.onkeydown=e=>{ if(e.key==='Enter') inp.blur(); };
+  });
+  document.querySelectorAll('#paList [data-q]').forEach(b=>{
+    b.onclick=()=>{ const k=b.dataset.q, p=PA.prices[k]; if(p!=null) paSet(k,'below',p*(1-b.dataset.p/100)); };
+  });
+  document.querySelectorAll('#paList [data-lock]').forEach(b=>{
+    b.onclick=()=>{ const l=paLocks(), k=b.dataset.lock; if(l[k]) delete l[k]; else l[k]=1; paSaveLocks(l); paCheck(); paDrawList(true); };
   });
 }
 paFetch(); setInterval(paFetch,60000);
