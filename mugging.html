@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mugging</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%230c0d17'/><path d='M15.7 3.2A9 9 0 1 0 21 14.3 7 7 0 0 1 15.7 3.2Z' fill='%23E9A57A'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<script src="config.js"></script>
+<script src="nav.js"></script>
+<style>
+  :root{
+    --bg:#0e0f18; --surface:#161724; --surface2:#1d1e2e; --border:rgba(184,180,214,.12); --border2:rgba(184,180,214,.22);
+    --text:#e9e7f2; --muted:#9a96b0; --faint:#6b6880;
+    --accent:#e9a57a; --good:#87c9a6; --idle:#e2c78c; --bad:#d99a9a; --blue:#8ea3d8; --gold:#e9d5a2;
+    --display:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1100px 600px at 78% -12%, rgba(233,165,122,.09), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(179,168,224,.08), transparent 60%),
+      var(--bg);
+    color:var(--text); font:14px/1.5 Inter,"Segoe UI",system-ui,sans-serif; min-height:100vh;
+  }
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .moon{width:32px;height:32px;flex:0 0 auto;filter:drop-shadow(0 0 12px rgba(233,165,122,.55))}
+  h1{font:700 22px var(--display);margin:0;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12.5px}
+  .spacer{flex:1}
+  .ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:7px 14px;font:600 13px Inter,sans-serif;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#1f130a;border-color:var(--accent)}
+  .btn.ghost{background:transparent}
+  .btn.small{padding:4px 10px;font-size:12px}
+  .btn.dim{opacity:.4}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px}
+  .card h2{font:600 15px var(--display);margin:0 0 8px}
+  .note{color:var(--muted);font-size:12.5px;margin:4px 0}
+  .note b{color:var(--text);font-weight:600}
+  .hidden{display:none!important}
+  .scan{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .scan .bar{flex:1 1 220px;height:6px;border-radius:6px;background:var(--surface2);overflow:hidden;min-width:120px}
+  .scan .bar i{display:block;height:100%;width:30%;background:linear-gradient(90deg,var(--accent),#f3c9a4);border-radius:6px;animation:slide 1.4s ease-in-out infinite}
+  @keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+  .scan.done .bar{display:none}
+  .tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 14px}
+  .tile .k{color:var(--muted);font:600 11px Inter,sans-serif;text-transform:uppercase;letter-spacing:.5px}
+  .tile .v{font:700 20px var(--display)}
+  .tile .v.good{color:var(--good)} .tile .v.bad{color:var(--bad)} .tile .v.gold{color:var(--gold)}
+  .filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .filters label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;cursor:pointer}
+  input[type=text],input[type=number],input[type=search]{background:var(--bg);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:7px 12px;font:14px Inter,sans-serif}
+  #minMug{width:130px} #q{flex:1 1 200px;min-width:0}
+  .sech{display:flex;align-items:center;gap:8px;margin:18px 0 8px;font:600 13px var(--display);letter-spacing:.6px;text-transform:uppercase}
+  .sech .n{color:var(--muted);font-weight:500}
+  .d{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .d.online{background:var(--good)} .d.idle{background:var(--idle)} .d.offline{background:var(--faint)}
+  .tw{overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+  table{width:100%;border-collapse:collapse;min-width:980px;table-layout:fixed}
+  th{font:600 11.5px Inter,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap;background:var(--surface2)}
+  th:hover{color:var(--text)}
+  th .ar{color:var(--accent);margin-left:4px}
+  th.num,td.num{text-align:right}
+  th.nos{cursor:default}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  td .s2{display:block;color:var(--muted);font-size:11.5px}
+  td.name a{text-decoration:none;font-weight:600}
+  td.name a:hover{color:var(--accent)}
+  .money{color:var(--gold);font-weight:600;font-variant-numeric:tabular-nums}
+  .st-ok{color:var(--good);font-weight:600} .st-hosp,.st-jail{color:var(--bad);font-weight:600} .st-travel{color:var(--blue);font-weight:600}
+  .ff-low{color:var(--good)} .ff-mid{color:var(--idle)} .ff-high{color:var(--bad)}
+  .empty{padding:14px;color:var(--muted)}
+  /* phone: cards instead of a wide table */
+  @media(max-width:700px){
+    .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .tw{border:0;background:none;overflow:visible}
+    table,tbody,tr,td{display:block;min-width:0;width:auto}
+    thead{display:none}
+    tr{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 12px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+    td{padding:0;border:0;white-space:normal}
+    td.name{grid-column:1;grid-row:1} td.atk{grid-column:2;grid-row:1;justify-self:end;align-self:center}
+    td[data-l]::before{content:attr(data-l)": ";color:var(--muted);font-size:12px}
+    td.num{text-align:left}
+    td .s2{display:inline;margin-left:6px}
+  }
+</style>
+</head>
+<body data-section="mugging">
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg class="moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15.5 2.5A9.5 9.5 0 1 0 21.5 15 7.5 7.5 0 0 1 15.5 2.5Z" fill="#E9A57A"/></svg>
+      <div><h1>Mugging</h1><div class="sub">Players you mugged for a lot before, with live status</div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="ctrl">
+      <span class="note" id="cycle"></span>
+      <a class="btn ghost hidden" id="sheetBtn" target="_blank" rel="noopener">Open backup sheet</a>
+      <button class="btn" id="refreshBtn">Refresh now</button>
+    </div>
+  </header>
+
+  <div class="card hidden" id="keyCard">
+    <h2>Set your Torn API key</h2>
+    <div class="note">Live activity and status come straight from Torn with your key. It is saved only in this browser, the same key every TornHub page uses.</div>
+    <button class="btn primary" id="keyBtn" style="margin-top:8px">Set key</button>
+  </div>
+
+  <div class="card">
+    <div class="scan" id="scan"><div><b id="scanTitle">Reading your mug history...</b><div class="note" id="scanNote">Your mug amounts come from your Torn log, read by your Google Apps Script. The first time this goes through all your history, after that only new mugs.</div></div><div class="bar"><i></i></div></div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">Players listed</div><div class="v" id="tList">0</div></div>
+    <div class="tile"><div class="k">Okay now</div><div class="v good" id="tOk">0</div></div>
+    <div class="tile"><div class="k">Online</div><div class="v good" id="tOn">0</div></div>
+    <div class="tile"><div class="k">In hospital</div><div class="v bad" id="tHosp">0</div></div>
+    <div class="tile"><div class="k">Best mug ever</div><div class="v gold" id="tBest">-</div></div>
+  </div>
+
+  <div class="filters">
+    <label>Single mug of at least $ <input type="number" id="minMug" min="0" step="50000"></label>
+    <input type="search" id="q" placeholder="Search name or ID">
+    <label><input type="checkbox" id="okOnly"> Okay only</label>
+  </div>
+
+  <div id="panel"></div>
+  <div class="note" style="margin-top:14px">Activity and status are checked about every minute per player within Torn's request limit (40 a minute for this page). FF and estimated stats come from FF Scouter. Your full mug list is backed up to the "TornHub Backup" Google Sheet in your Drive.</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var PER_MIN = 40;
+  function now() { return Math.floor(Date.now() / 1000); }
+  function ls(k, v) {
+    try {
+      if (v === undefined) { var x = localStorage.getItem(k); return x ? JSON.parse(x) : null; }
+      localStorage.setItem(k, JSON.stringify(v));
+    } catch (e) { return null; }
+  }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function money(v) { return "$" + Math.round(v || 0).toLocaleString(); }
+  function short(v) { var a = Math.abs(v || 0); return "$" + (a >= 1e9 ? (v / 1e9).toFixed(2) + "b" : a >= 1e6 ? (v / 1e6).toFixed(2) + "m" : a >= 1e3 ? Math.round(v / 1e3) + "k" : Math.round(v || 0)); }
+  function ago(ts) {
+    if (!ts) return "-";
+    var s = Math.max(0, now() - ts);
+    if (s < 60) return "just now";
+    if (s < 3600) return Math.floor(s / 60) + " min ago";
+    if (s < 86400) return Math.floor(s / 3600) + " h ago";
+    var d = Math.floor(s / 86400); return d + (d === 1 ? " day ago" : " days ago");
+  }
+  function clock(s) { s = Math.max(0, Math.round(s)); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); }
+  function dateOf(ts) { return ts ? new Date(ts * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "-"; }
+
+  // ---------------------------------------------------------------- state
+  var S = {
+    mugs: ls("mg_cache") || { victims: [], done: false },
+    prof: ls("mg_prof") || {},        // id -> {name, level, status, la, t}
+    ff: ls("mg_ff") || {},            // id -> {ff, bs, t}
+    min: Number(ls("mg_min")) || 400000,
+    sort: ls("mg_sort") || { k: "best", d: -1 },
+    okOnly: !!ls("mg_okonly"),
+    q: "",
+    budget: PER_MIN, scanning: false, lastScan: 0, namesSent: ls("mg_names") || {}
+  };
+  function key() { return window.TornHub && TornHub.getKey ? TornHub.getKey() : ""; }
+  function listed() {
+    return (S.mugs.victims || []).filter(function (v) { return v.best >= S.min; });
+  }
+
+  // ---------------------------------------------------------------- mug history (Apps Script reads your log)
+  function scan() {
+    if (S.scanning || !window.TornHub) return;
+    S.scanning = true;
+    $("#scan").classList.remove("done");
+    TornHub.fetchView("mugs").then(function (d) {
+      S.scanning = false; S.lastScan = Date.now();
+      if (!d || d.error || !d.victims) { scanMsg("Could not read your mug history", (d && d.error) || "No answer from the data service. Trying again in a minute."); return; }
+      S.mugs = d; ls("mg_cache", d);
+      if (d.sheet) { var b = $("#sheetBtn"); b.href = d.sheet; b.classList.remove("hidden"); }
+      render(); loadFF();
+      if (!d.done) { scanMsg("Reading your mug history...", "Gone back to " + dateOf(d.oldest) + " so far, " + (d.scanned || 0).toLocaleString() + " mugs read. It keeps going on its own, you can use the list meanwhile."); setTimeout(scan, 1500); }
+      else scanDone();
+    }).catch(function (e) {
+      S.scanning = false; S.lastScan = Date.now();
+      scanMsg("Could not read your mug history", String(e && e.message || e) + ". Trying again in a minute.");
+    });
+  }
+  function scanMsg(t, n) { $("#scanTitle").textContent = t; $("#scanNote").textContent = n; }
+  function scanDone() {
+    var d = S.mugs;
+    $("#scan").classList.add("done");
+    scanMsg("Mug history up to date",
+      (d.victims || []).length.toLocaleString() + " players mugged in total since " + dateOf(d.oldest) + ". Last checked " + ago(d.checked) + "; new mugs are picked up every 10 minutes and when you press Refresh.");
+  }
+
+  // ---------------------------------------------------------------- live status from Torn (your key)
+  function api(path) {
+    S.budget--;
+    return fetch("https://api.torn.com/v2" + path + (path.indexOf("?") < 0 ? "?" : "&") + "key=" + encodeURIComponent(key()))
+      .then(function (r) { return r.json(); });
+  }
+  var errUntil = 0;
+  function pump() {
+    if (!key() || S.budget < 1 || Date.now() < errUntil) return;
+    var list = listed(), t = now(), best = null, bestAge = -1;
+    list.forEach(function (v) {
+      var p = S.prof[v.id], age = p ? t - p.t : 1e9;
+      // check hospital players again as soon as they are due out
+      if (p && p.status && p.status.until && p.status.until < t && age > 20) age += 1e6;
+      if (age > 55 && age > bestAge) { best = v; bestAge = age; }
+    });
+    if (!best) return;
+    var id = best.id;
+    S.prof[id] = Object.assign({}, S.prof[id] || {}, { t: t });
+    api("/user/" + id + "/profile").then(function (d) {
+      if (d && d.error) {
+        if (d.error.code === 5) errUntil = Date.now() + 65000;
+        if (d.error.code === 2 || d.error.code === 16) $("#keyCard").classList.remove("hidden");
+        return;
+      }
+      var p = d && d.profile; if (!p) return;
+      S.prof[id] = { name: p.name, level: p.level, status: p.status || {}, la: p.last_action || {}, t: now() };
+      saveProf(); render();
+    }).catch(function () {});
+  }
+  var profTimer = 0;
+  function saveProf() { clearTimeout(profTimer); profTimer = setTimeout(function () { ls("mg_prof", S.prof); }, 2000); }
+
+  // FF Scouter (same key), 200 players a request, refreshed every 6 hours
+  function loadFF() {
+    if (!key()) return;
+    var t = now(), ids = listed().map(function (v) { return v.id; }).filter(function (id) { var f = S.ff[id]; return !f || t - f.t > 21600; });
+    if (!ids.length) return;
+    var batch = ids.slice(0, 200);
+    fetch("https://ffscouter.com/api/v1/get-stats?key=" + encodeURIComponent(key()) + "&targets=" + batch.join(","))
+      .then(function (r) { return r.json(); }).then(function (d) {
+        if (!Array.isArray(d)) return;
+        batch.forEach(function (id) { S.ff[id] = { ff: null, bs: null, t: now() }; });
+        d.forEach(function (x) { S.ff[x.player_id] = { ff: x.fair_fight, bs: x.bs_estimate_human || "", t: now() }; });
+        ls("mg_ff", S.ff); render();
+      }).catch(function () {});
+  }
+
+  // send names to the backup sheet so it is readable there too
+  function sendNames() {
+    if (!window.TornHub || !TornHub.postView) return;
+    var out = {}, n = 0;
+    (S.mugs.victims || []).forEach(function (v) {
+      var p = S.prof[v.id];
+      if (p && p.name && v.name !== p.name && S.namesSent[v.id] !== p.name) { out[v.id] = p.name; n++; }
+    });
+    if (!n) return;
+    TornHub.postView("mugnames", out).then(function () {
+      Object.keys(out).forEach(function (id) { S.namesSent[id] = out[id]; });
+      ls("mg_names", S.namesSent);
+    }).catch(function () {});
+  }
+
+  // ---------------------------------------------------------------- view
+  function statusOf(p) {
+    if (!p || !p.status || !p.status.state) return { txt: "Checking...", cls: "", ok: false, rank: 5, left: 0 };
+    var s = p.status, st = s.state, left = s.until ? s.until - now() : 0;
+    if (st === "Okay") return { txt: "Okay", cls: "st-ok", ok: true, rank: 0, left: 0 };
+    if (st === "Hospital") return left > 0 ? { txt: "Hospital " + clock(left), cls: "st-hosp", ok: false, rank: 1, left: left, sub: /swiss|in a /i.test(s.description || "") && !/^in hospital/i.test(s.description || "") ? s.description : "" }
+                                           : { txt: "Leaving hospital", cls: "st-ok", ok: true, rank: 0, left: 0 };
+    if (st === "Jail") return left > 0 ? { txt: "Jail " + clock(left), cls: "st-jail", ok: false, rank: 2, left: left } : { txt: "Leaving jail", cls: "st-ok", ok: true, rank: 0 };
+    if (st === "Traveling") return { txt: "Flying", cls: "st-travel", ok: false, rank: 3, sub: s.description || "" };
+    if (st === "Abroad") return { txt: s.description || "Abroad", cls: "st-travel", ok: false, rank: 3 };
+    return { txt: s.description || st, cls: "", ok: false, rank: 4 };
+  }
+  function actOf(p) {
+    var st = p && p.la && p.la.status;
+    return st === "Online" ? "online" : st === "Idle" ? "idle" : "offline";
+  }
+  function ffCls(f) { return f == null ? "" : f <= 2 ? "ff-low" : f <= 3.5 ? "ff-mid" : "ff-high"; }
+  var COLS = [
+    ["name", "Player", ""], ["level", "Level", "num"], ["ff", "FF", "num"], ["bs", "Est. stats", "num"],
+    ["best", "Best mug", "num"], ["last", "Last mug", ""], ["count", "Mugs", "num"], ["active", "Last active", ""],
+    ["status", "Status", ""], ["atk", "Attack", "nos"]
+  ];
+  function val(v, k) {
+    var p = S.prof[v.id] || {}, f = S.ff[v.id] || {};
+    switch (k) {
+      case "name": return (p.name || v.name || String(v.id)).toLowerCase();
+      case "level": return p.level || 0;
+      case "ff": return f.ff == null ? 99 : f.ff;
+      case "bs": return parseBs(f.bs);
+      case "best": return v.best;
+      case "last": return v.last;
+      case "count": return v.count;
+      case "active": return p.la && p.la.timestamp ? p.la.timestamp : 0;
+      case "status": var s = statusOf(p); return s.rank * 1e6 + (s.left || 0);
+    }
+    return 0;
+  }
+  function parseBs(s) { if (!s) return 0; var m = String(s).match(/([\d.]+)\s*([kmbt]?)/i); if (!m) return 0;
+    return parseFloat(m[1]) * ({ k: 1e3, m: 1e6, b: 1e9, t: 1e12 }[(m[2] || "").toLowerCase()] || 1); }
+  function row(v) {
+    var p = S.prof[v.id] || {}, f = S.ff[v.id] || {}, s = statusOf(p), name = p.name || v.name || "";
+    var atk = "https://www.torn.com/page.php?sid=attack&user2ID=" + v.id;
+    return "<tr data-id='" + v.id + "'>" +
+      "<td class='name'><a href='https://www.torn.com/profiles.php?XID=" + v.id + "' target='_blank' rel='noopener'>" + esc(name || ("Player " + v.id)) + "</a><span class='s2'>" + v.id + "</span></td>" +
+      "<td class='num' data-l='Level'>" + (p.level || "-") + "</td>" +
+      "<td class='num " + ffCls(f.ff) + "' data-l='FF'>" + (f.ff != null ? Number(f.ff).toFixed(2) : "-") + "</td>" +
+      "<td class='num' data-l='Est. stats'>" + esc(f.bs || "-") + "</td>" +
+      "<td class='num' data-l='Best mug'><span class='money'>" + money(v.best) + "</span></td>" +
+      "<td data-l='Last mug'>" + short(v.lastAmt) + "<span class='s2'>" + ago(v.last) + "</span></td>" +
+      "<td class='num' data-l='Mugs'>" + v.count + "<span class='s2'>" + short(v.total) + " total</span></td>" +
+      "<td data-l='Last active'>" + (p.la && p.la.timestamp ? ago(p.la.timestamp) : "-") + "</td>" +
+      "<td data-l='Status'><span class='" + s.cls + "'>" + esc(s.txt) + "</span>" + (s.sub ? "<span class='s2'>" + esc(s.sub) + "</span>" : "") + "</td>" +
+      "<td class='atk'><a class='btn small" + (s.ok ? " primary" : " dim") + "' href='" + atk + "' target='_blank' rel='noopener'>Attack</a></td></tr>";
+  }
+  function table(list, sec) {
+    var srt = S.sort, sorted = list.slice().sort(function (a, b) {
+      var x = val(a, srt.k), y = val(b, srt.k);
+      return (x < y ? -1 : x > y ? 1 : 0) * srt.d || b.best - a.best;
+    });
+    var head = "<thead><tr>" + COLS.map(function (c) {
+      return "<th class='" + c[2] + "' data-k='" + c[0] + "'>" + c[1] + (srt.k === c[0] ? "<span class='ar'>" + (srt.d > 0 ? "&#9650;" : "&#9660;") + "</span>" : "") + "</th>";
+    }).join("") + "</tr></thead>";
+    return "<div class='tw'><table data-sec='" + sec + "'>" + head + "<tbody>" +
+      (sorted.length ? sorted.map(row).join("") : "<tr><td colspan='10' class='empty'>No players</td></tr>") + "</tbody></table></div>";
+  }
+  var hoverHold = 0;
+  function render() {
+    if (Date.now() - hoverHold < 3000) return;
+    var q = S.q.trim().toLowerCase();
+    var all = listed();
+    var shown = all.filter(function (v) {
+      var p = S.prof[v.id] || {};
+      if (q && String(v.id).indexOf(q) < 0 && (p.name || v.name || "").toLowerCase().indexOf(q) < 0) return false;
+      if (S.okOnly && !statusOf(p).ok) return false;
+      return true;
+    });
+    var groups = { online: [], idle: [], offline: [] };
+    shown.forEach(function (v) { groups[actOf(S.prof[v.id])].push(v); });
+    $("#panel").innerHTML = [["online", "Online"], ["idle", "Idle"], ["offline", "Offline"]].map(function (g) {
+      return "<div class='sech'><span class='d " + g[0] + "'></span>" + g[1] + " <span class='n'>(" + groups[g[0]].length + ")</span></div>" + table(groups[g[0]], g[0]);
+    }).join("");
+    $("#tList").textContent = all.length;
+    $("#tOk").textContent = all.filter(function (v) { return statusOf(S.prof[v.id]).ok; }).length;
+    $("#tOn").textContent = all.filter(function (v) { return actOf(S.prof[v.id]) === "online"; }).length;
+    $("#tHosp").textContent = all.filter(function (v) { var p = S.prof[v.id]; return p && p.status && p.status.state === "Hospital"; }).length;
+    var top = (S.mugs.victims || []).reduce(function (m, v) { return Math.max(m, v.best || 0); }, 0);
+    $("#tBest").textContent = top ? short(top) : "-";
+  }
+
+  // ---------------------------------------------------------------- controls
+  $("#minMug").value = S.min;
+  $("#minMug").addEventListener("change", function () { var v = Number(this.value); S.min = v >= 0 ? v : 400000; ls("mg_min", S.min); render(); loadFF(); });
+  $("#q").addEventListener("input", function () { S.q = this.value; render(); });
+  $("#okOnly").checked = S.okOnly;
+  $("#okOnly").addEventListener("change", function () { S.okOnly = this.checked; ls("mg_okonly", S.okOnly); render(); });
+  $("#refreshBtn").addEventListener("click", function () { scan(); Object.keys(S.prof).forEach(function (id) { S.prof[id].t = 0; }); });
+  $("#keyBtn").addEventListener("click", function () { if (window.TornHub && TornHub.askKey) TornHub.askKey(); });
+  $("#panel").addEventListener("click", function (e) {
+    var th = e.target.closest("th[data-k]"); if (!th || th.classList.contains("nos")) return;
+    var k = th.dataset.k; S.sort = S.sort.k === k ? { k: k, d: -S.sort.d } : { k: k, d: (k === "name" || k === "status" || k === "ff") ? 1 : -1 };
+    ls("mg_sort", S.sort); hoverHold = 0; render();
+  });
+  $("#panel").addEventListener("mouseover", function (e) { if (e.target.closest("a,button")) hoverHold = Date.now(); });
+
+  if (!key()) $("#keyCard").classList.remove("hidden");
+  if (S.mugs.victims && S.mugs.victims.length) { render(); if (S.mugs.done) scanDone(); }
+  else render();
+  scan(); loadFF();
+
+  // main loop: one Torn request at a time within the per-minute budget
+  setInterval(function () { S.budget = Math.min(PER_MIN / 60 * 4, S.budget + PER_MIN / 60); pump(); }, 1000);
+  setInterval(render, 2000);
+  setInterval(function () { if (!S.scanning && Date.now() - S.lastScan > 600000) scan(); }, 30000);
+  setInterval(loadFF, 600000);
+  setInterval(sendNames, 60000);
+  setInterval(function () { var d = Object.keys(S.prof).filter(function (id) { return S.prof[id].name; }).length; $("#cycle").textContent = d ? d + " players checked" : ""; }, 5000);
+})();
+</script>
+</body>
+</html>
