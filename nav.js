@@ -13,7 +13,10 @@
       chips: ["Portfolio", "Net Worth", "What to Buy Next", "Cayman", "Property", "Inventory"] },
     { id: "targets", href: "targets.html", name: "Targets", icon: "🎯",
       blurb: "Your hit list with live status, hospital timers, travel and inactive clean-up.",
-      chips: ["Live status", "Hospital timers", "Factions", "Too strong", "Inactive"] }
+      chips: ["Live status", "Hospital timers", "Factions", "Too strong", "Inactive"] },
+    { id: "mugging", href: "mugging.html", name: "Mugging", icon: "💸",
+      blurb: "Players you mugged for $400k or more in a single mug, with live status and a Google Sheet backup.",
+      chips: ["Mug history", "Live status", "Hospital timers", "Backup sheet"] }
   ];
 
   var CSS = [
