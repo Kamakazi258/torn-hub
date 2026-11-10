@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Travel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%230c0d17'/><path d='M15.7 3.2A9 9 0 1 0 21 14.3 7 7 0 0 1 15.7 3.2Z' fill='%238EA3D8'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<script src="config.js"></script>
+<script src="nav.js"></script>
+<style>
+  :root{
+    --bg:#0e0f18; --surface:#161724; --surface2:#1d1e2e; --border:rgba(184,180,214,.12); --border2:rgba(184,180,214,.22);
+    --text:#e9e7f2; --muted:#9a96b0; --faint:#6b6880;
+    --accent:#8ea3d8; --good:#87c9a6; --warn:#e2c78c; --bad:#d99a9a; --gold:#e9d5a2;
+    --display:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1100px 600px at 78% -12%, rgba(142,163,216,.10), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(135,201,166,.07), transparent 60%), var(--bg);
+    color:var(--text); font:14px/1.5 Inter,"Segoe UI",system-ui,sans-serif; min-height:100vh;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:22px 16px 60px}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .moon{width:32px;height:32px;filter:drop-shadow(0 0 12px rgba(142,163,216,.55))}
+  h1{font:700 22px var(--display);margin:0}
+  .sub{color:var(--muted);font-size:12.5px}
+  .spacer{flex:1}
+  .btn{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:7px 14px;font:600 13px Inter,sans-serif;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .note{color:var(--muted);font-size:12.5px}
+  .hidden{display:none!important}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:18px}
+  .cb{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:24px;padding:0 7px;border-radius:7px;background:var(--surface2);border:1px solid var(--border2);font:700 11px var(--display);letter-spacing:.5px;color:var(--accent)}
+  .status{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .status .cb{min-width:56px;height:36px;font-size:14px}
+  .status .big{font:700 20px var(--display)}
+  .cd{margin-left:auto;text-align:right}
+  .cd b{display:block;font:700 24px var(--display);color:var(--gold);font-variant-numeric:tabular-nums}
+  .sec{margin:26px 0 10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .sec h2{font:700 17px var(--display);margin:0;display:flex;align-items:center;gap:8px}
+  .sec .note{flex:1 1 260px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .chip{background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:999px;padding:4px 12px;font:600 12px Inter,sans-serif;cursor:pointer}
+  .chip.on{background:var(--surface2);color:var(--text);border-color:var(--accent)}
+  .trip{display:grid;grid-template-columns:34px minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,1.3fr);gap:6px 16px;align-items:center;
+        background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+  .trip.dest{border-color:rgba(233,213,162,.45)}
+  .rk{font:700 15px var(--display);color:var(--faint);text-align:center}
+  .top3 .rk{color:var(--gold)}
+  .it{display:flex;align-items:center;gap:10px;min-width:0}
+  .it img{width:40px;height:20px;object-fit:contain;flex:0 0 auto}
+  .it b{font:600 14.5px var(--display);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .it .rt{color:var(--muted);font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .it .rt .cb{height:19px;min-width:32px;font-size:10px}
+  .pr{font-variant-numeric:tabular-nums}
+  .pr .p{font:700 17px var(--display);color:var(--good)}
+  .pr small{display:block;color:var(--muted);font-size:12px}
+  .st{font-size:12.5px;line-height:1.45}
+  .st .q{font-weight:600}
+  .st .ok{color:var(--good)} .st .warn{color:var(--warn)} .st .bad{color:var(--bad)}
+  .st small{display:block;color:var(--muted);font-size:12px}
+  .tag{font-size:10.5px;font-weight:700;letter-spacing:.4px;border-radius:5px;padding:1px 6px;border:1px solid}
+  .tag.fixed{color:var(--good);border-color:rgba(135,201,166,.4)} .tag.mkt{color:var(--warn);border-color:rgba(226,199,140,.4)}
+  .more{display:block;margin:4px auto 0}
+  .empty{color:var(--muted);padding:12px;background:var(--surface);border:1px dashed var(--border2);border-radius:14px}
+  .carry{display:grid;grid-template-columns:minmax(0,1.4fr) 70px minmax(0,1fr) minmax(0,1fr);gap:6px 14px;align-items:center;padding:9px 4px;border-top:1px solid var(--border)}
+  .carry:first-child{border-top:0}
+  .carry .w{text-align:right;font-variant-numeric:tabular-nums}
+  .carry .best{color:var(--gold);font-weight:600}
+  .carry small{display:block;color:var(--muted);font-size:12px}
+  .src{font-size:11.5px;color:var(--faint);margin-top:18px}
+  .move{border-color:rgba(142,163,216,.45)}
+  .move h2{font:700 17px var(--display);margin:0 0 10px}
+  .step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;padding:8px 0;border-top:1px solid var(--border)}
+  .step:first-of-type{border-top:0}
+  .step .n{width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--accent);color:var(--accent);font:700 12px var(--display);display:flex;align-items:center;justify-content:center}
+  .step b{font:600 14.5px var(--display)}
+  .step .note b{font:600 12.5px Inter,sans-serif;color:var(--text)}
+  @media(max-width:700px){
+    .trip{grid-template-columns:24px minmax(0,1fr);gap:6px 10px}
+    .trip .pr,.trip .st{grid-column:2}
+    .trip .pr small{display:inline;margin-right:8px}
+    .carry{grid-template-columns:minmax(0,1fr) auto}
+    .carry .n{display:none}
+    .carry .where{grid-column:1 / -1}
+    .cd{margin-left:0;text-align:left}
+  }
+</style>
+</head>
+<body data-section="travel">
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg class="moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15.5 2.5A9.5 9.5 0 1 0 21.5 15 7.5 7.5 0 0 1 15.5 2.5Z" fill="#8EA3D8"/></svg>
+      <div><h1>Travel</h1><div class="sub">Best things to bring back, when they restock, and where to sell what you carry</div></div>
+    </div>
+    <div class="spacer"></div>
+    <span class="note" id="loadNote"></span>
+    <button class="btn" id="refreshBtn">Refresh now</button>
+  </header>
+
+  <div class="card hidden" id="keyCard"><b>Set your Torn API key</b> <span class="note">with the Key button at the top right.</span></div>
+  <div class="card"><div class="status" id="status"><span class="note">Checking where you are...</span></div></div>
+
+  <div id="moveBox"></div>
+  <div id="destBox"></div>
+
+  <div class="sec"><h2>Best trips now</h2><span class="note">Buy abroad, sell to a Torn shop. Shop prices never change, so this profit is sure. Ranked by profit per hour of flying with your flight type (<b id="methodName">Standard</b>).</span></div>
+  <div class="chips" id="fixedChips"><button class="chip on" data-f="all">All</button><button class="chip" data-f="in">In stock now</button><button class="chip" data-f="land">In stock when I land</button></div>
+  <div id="fixedList"></div>
+
+  <div class="sec"><h2>Market deals</h2><span class="note">Buy abroad, sell on the Torn item market. Includes drugs, plushies and flowers. Prices change, so check before you buy.</span></div>
+  <div class="chips" id="mktChips"><button class="chip on" data-f="all">All</button><button class="chip" data-f="in">In stock now</button><button class="chip" data-f="land">In stock when I land</button></div>
+  <div id="mktList"></div>
+
+  <div class="sec"><h2>What you carry</h2><span class="note">Best place to sell each item you hold that is linked to travel. A foreign shop is included when you are flying there or are there.</span></div>
+  <div class="card" id="carryList"></div>
+
+  <div class="src">Shop prices, item market prices, your travel and your items come straight from Torn with your key. Abroad stock, restock times and sell-out speed come from Prombot, YATA and the Foreign Stock restock model (reported by players), so they are estimates.</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var COUNTRIES = [
+    ["mex", "Mexico", "MEX", 26], ["cay", "Cayman Islands", "CAY", 35], ["can", "Canada", "CAN", 41],
+    ["haw", "Hawaii", "HAW", 134], ["uni", "United Kingdom", "UK", 159], ["arg", "Argentina", "ARG", 167],
+    ["swi", "Switzerland", "SWI", 175], ["jap", "Japan", "JAP", 225], ["chi", "China", "CHN", 242],
+    ["uae", "United Arab Emirates", "UAE", 271], ["sou", "South Africa", "SA", 297]
+  ];
+  var BY_CODE = {}, BY_NAME = {};
+  COUNTRIES.forEach(function (c) { BY_CODE[c[0]] = c; BY_NAME[c[1].toLowerCase()] = c; });
+  BY_NAME.uae = BY_CODE.uae; BY_NAME.cayman = BY_CODE.cay;
+  var METHOD = { standard: 1, airstrip: 0.7, private: 0.5, business: 0.3 };
+  var PER_MIN = 40, SHOW = 10;
+
+  function now() { return Math.floor(Date.now() / 1000); }
+  function ls(k, v) { try { if (v === undefined) { var x = localStorage.getItem(k); return x ? JSON.parse(x) : null; } localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function money(v) { return v == null ? "-" : "$" + Math.round(v).toLocaleString(); }
+  function signed(v) { return v == null ? "-" : (v >= 0 ? "+$" : "-$") + Math.round(Math.abs(v)).toLocaleString(); }
+  function dur(sec) { var m = Math.max(1, Math.round(sec / 60)); return m < 60 ? m + "m" : Math.floor(m / 60) + "h " + (m % 60) + "m"; }
+  function clock(s) { s = Math.max(0, Math.round(s)); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); }
+  function key() { return window.TornHub && TornHub.getKey ? TornHub.getKey() : ""; }
+  function img(id) { return "<img src='https://www.torn.com/images/items/" + id + "/small.png' alt='' loading='lazy' onerror=\"this.style.visibility='hidden'\">"; }
+
+  var S = {
+    items: null, stock: null, model: {}, travel: null, status: null, method: "standard", inv: {},
+    low: ls("tr_low") || {}, budget: PER_MIN, f: { fixed: "all", mkt: "all" }, open: { fixed: false, mkt: false }
+  };
+
+  // ---------------------------------------------------------------- data
+  function torn(path) {
+    S.budget--;
+    return fetch("https://api.torn.com/v2" + path + (path.indexOf("?") < 0 ? "?" : "&") + "key=" + encodeURIComponent(key())).then(function (r) { return r.json(); });
+  }
+  function loadItems() {
+    var c = ls("tr_items2");
+    if (c && now() - c.t < 21600) { S.items = c.d; return Promise.resolve(); }
+    return torn("/torn/items").then(function (d) {
+      if (!d || !d.items) return;
+      var out = {};
+      d.items.forEach(function (it) {
+        var v = it.value || {}, shops = {};
+        (v.shops || []).forEach(function (s) { var c = BY_NAME[String(s.country || "").toLowerCase()]; if (c && s.sell_price) shops[c[0]] = s.sell_price; });
+        out[it.id] = { name: it.name, type: it.type, npc: v.sell_price || null, avg: v.market_price || null, shops: shops };
+      });
+      S.items = out; ls("tr_items2", { t: now(), d: out });
+    });
+  }
+  function loadStock() {
+    function parse(j) {
+      var out = {}, st = (j && j.stocks) || {};
+      Object.keys(st).forEach(function (code) {
+        out[code] = { update: st[code].update || 0, items: (st[code].stocks || []).map(function (x) {
+          return { id: x.id, name: x.name, qty: x.quantity, cost: x.cost, next: x.nextRestock ? Math.floor(Date.parse(x.nextRestock) / 1000) : null };
+        }) };
+      });
+      return out;
+    }
+    var stock = fetch("https://api.prombot.co.uk/api/travel").then(function (r) { return r.json(); }).then(parse)
+      .catch(function () { return fetch("https://yata.yt/api/v1/travel/export/").then(function (r) { return r.json(); }).then(parse); })
+      .then(function (d) { if (d && Object.keys(d).length) S.stock = d; }).catch(function () {});
+    var model = fetch("https://raw.githubusercontent.com/russianrob/torn-foreign-restock/main/restock-model.json").then(function (r) { return r.json(); })
+      .then(function (j) { S.model = (j && j.items) || {}; }).catch(function () {});
+    return Promise.all([stock, model]);
+  }
+  function loadTravel() {
+    return Promise.all([torn("/user/travel"), torn("/user/basic")]).then(function (r) {
+      S.travel = r[0] && r[0].travel || null;
+      S.status = (r[1] && r[1].profile && r[1].profile.status) || (r[1] && r[1].status) || null;
+      if (S.travel && S.travel.method) {
+        var m = String(S.travel.method).toLowerCase();
+        S.method = m.indexOf("air") >= 0 ? "airstrip" : m.indexOf("private") >= 0 ? "private" : m.indexOf("business") >= 0 ? "business" : "standard";
+      }
+      if (r[0] && r[0].error && (r[0].error.code === 2 || r[0].error.code === 16)) $("#keyCard").classList.remove("hidden");
+    }).catch(function () {});
+  }
+  function loadInventory() {
+    if (!S.items) return Promise.resolve();
+    var types = {};
+    Object.keys(S.items).forEach(function (id) { var it = S.items[id]; if (Object.keys(it.shops).length || /^(Plushie|Flower|Drug)$/.test(it.type)) types[it.type] = 1; });
+    Object.keys(S.stock || {}).forEach(function (c) { S.stock[c].items.forEach(function (x) { var it = S.items[x.id]; if (it) types[it.type] = 1; }); });
+    var inv = {};
+    return Promise.all(Object.keys(types).map(function (t) {
+      return torn("/user/inventory?cat=" + encodeURIComponent(t)).then(function (d) {
+        ((d && d.inventory && d.inventory.items) || []).forEach(function (x) { if (!x.equipped) inv[x.id] = (inv[x.id] || 0) + x.amount; });
+      }).catch(function () {});
+    })).then(function () { S.inv = inv; });
+  }
+  // cheapest item market listing, one item at a time within Torn's request limit
+  var queue = [];
+  function want(id) { var l = S.low[id]; if ((!l || now() - l.t > 600) && queue.indexOf(id) < 0) queue.push(id); }
+  function pump() {
+    while (S.budget >= 1 && queue.length) {
+      (function (id) {
+        torn("/market/" + id + "/itemmarket?limit=1").then(function (d) {
+          var l = d && d.itemmarket && d.itemmarket.listings && d.itemmarket.listings[0];
+          S.low[id] = { p: l ? l.price : null, n: l ? l.amount : 0, t: now() }; saveLow(); paintSoon();
+        }).catch(function () {});
+      })(queue.shift());
+    }
+    $("#loadNote").textContent = queue.length ? "Checking item market prices, " + queue.length + " left" : "";
+  }
+  var lt = 0; function saveLow() { clearTimeout(lt); lt = setTimeout(function () { ls("tr_low", S.low); }, 1500); }
+  function low(id) { var l = S.low[id]; return l && l.p != null ? l.p : null; }
+
+  // ---------------------------------------------------------------- restock and landing
+  function flightSec(code) { return (BY_CODE[code] ? BY_CODE[code][3] : 0) * 60 * (METHOD[S.method] || 1); }
+  function nextRestock(code, x) {   // seconds from now, or null
+    var t = now(), best = null;
+    if (x.next && x.next > t) best = x.next - t;
+    var m = S.model[code] && S.model[code][String(x.id)];
+    if (m && m.interval && m.last != null && m.rel !== "low") {
+      var since = t - m.last, left = since < 0 ? -since : m.interval - (since % m.interval);
+      if (best == null || left < best) best = left;
+    }
+    return best;
+  }
+  function interval(code, x) { var m = S.model[code] && S.model[code][String(x.id)]; return m && m.interval && m.rel !== "low" ? m.interval : null; }
+  function selloutSec(code, x) {   // how long current stock lasts, or null if unknown
+    var m = S.model[code] && S.model[code][String(x.id)];
+    if (!m || !m.sellReady || !m.sellRate || x.qty <= 0) return null;
+    return x.qty / (m.sellRate * 1.15) * 60;
+  }
+  function arriveIn(code) {   // seconds until you could land there
+    var t = S.travel;
+    if (t && t.arrival_at > now() && BY_NAME[String(t.destination || "").toLowerCase()] === BY_CODE[code]) return t.arrival_at - now();
+    if (S.status && S.status.state === "Abroad" && BY_NAME[String(S.status.description || "").replace(/^In /, "").toLowerCase()] === BY_CODE[code]) return 0;
+    return flightSec(code);
+  }
+  function landing(code, x) {
+    var a = arriveIn(code), r = nextRestock(code, x), so = selloutSec(code, x);
+    if (x.qty > 0) {
+      if (so == null || so > a + 300) return { ok: true, txt: a ? "Still in stock when you land" : "In stock here now" };
+      if (r != null && r <= a) return { ok: true, txt: "Sells out, but restocks before you land" };
+      return { ok: false, warn: true, txt: "May sell out before you land (about " + dur(so) + " left)" };
+    }
+    if (r != null && r <= a) return { ok: true, txt: "Restocks before you land" };
+    return { ok: false, txt: r != null ? "Empty when you land, restocks " + dur(r - a) + " after" : "Empty, restock time unknown" };
+  }
+
+  // seconds until you are back in Torn and free to fly again (every trip goes through Torn)
+  function readyIn() {
+    var t = S.travel, s = S.status;
+    if (t && t.arrival_at > now()) {
+      if (t.destination === "Torn") return t.arrival_at - now();
+      var c = BY_NAME[String(t.destination || "").toLowerCase()];
+      return t.arrival_at - now() + (c ? flightSec(c[0]) : 0);
+    }
+    if (s && s.state === "Abroad") { var c2 = BY_NAME[String(s.description || "").replace(/^In /, "").toLowerCase()]; return c2 ? flightSec(c2[0]) : 0; }
+    return 0;
+  }
+  // when you would land if you leave Torn as soon as you are free, and whether the item is there then
+  function plan(r, ready) {
+    var fl = flightSec(r.c[0]), land = ready + fl, rs = nextRestock(r.c[0], r.x), so = selloutSec(r.c[0], r.x);
+    var inAtLand = r.x.qty >= 10 && (so == null || so > land + 300);   // a handful left is not worth a trip
+    if (inAtLand || (rs != null && rs <= land)) return { wait: 0, leave: ready, land: land };
+    if (rs == null) return null;                       // empty and no restock estimate
+    return { wait: rs - land, leave: rs - fl, land: rs };   // leave later so you land just as it restocks
+  }
+  function nextMove() {
+    var ready = readyIn(), all = trips("fixed").concat(trips("mkt"));
+    var opts = all.map(function (r) {
+      var p = plan(r, ready); if (!p) return null;
+      var total = p.leave + fl2(r) ;   // time from now until back in Torn with the goods
+      return { r: r, p: p, score: r.profit / Math.max(600, total) };
+    }).filter(Boolean).sort(function (a, b) { return b.score - a.score; });
+    function fl2(r) { return flightSec(r.c[0]) * 2; }
+    if (!opts.length) return null;
+    var best = opts[0], filler = null;
+    if (best.p.wait > 0) {
+      var gap = best.p.leave - ready;                  // free time before you need to leave
+      filler = all.filter(function (r) { return r.c[0] !== best.r.c[0] && fl2(r) + 300 <= gap && r.land.ok; })
+        .sort(function (a, b) { return b.profit - a.profit; })[0] || null;
+    }
+    return { ready: ready, best: best, filler: filler, alt: opts.find(function (o) { return o.p.wait === 0 && o !== best; }) || null };
+  }
+  function when(sec) { return sec <= 60 ? "now" : "in " + dur(sec) + " (" + new Date((now() + sec) * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ")"; }
+  function paintMove() {
+    if (!S.items || !S.stock) { $("#moveBox").innerHTML = ""; return; }
+    var m = nextMove(); if (!m) { $("#moveBox").innerHTML = ""; return; }
+    var b = m.best.r, bp = m.best.p, steps = [], n = 0;
+    function step(t, d) { steps.push("<div class='step'><span class='n'>" + (++n) + "</span><div><b>" + t + "</b><div class='note'>" + d + "</div></div></div>"); }
+    var dc = destCode();
+    if (dc) {
+      var here = trips("fixed").concat(trips("mkt")).filter(function (r) { return r.c[0] === dc && r.x.qty > 0; }).sort(function (a, b) { return b.profit - a.profit; })[0];
+      var hc = BY_CODE[dc];
+      step(S.status && S.status.state === "Abroad" ? "Now, in " + esc(hc[1]) : "When you land in " + esc(hc[1]),
+        here ? "Buy <b>" + esc(here.x.name) + "</b> for " + money(here.x.cost) + ", sell at the " + here.where + " for " + money(here.sell) + " (<b>" + signed(here.profit) + " each</b>). Full list under Buy in " + esc(hc[1]) + "."
+             : "Nothing profitable to bring back from here right now.");
+    }
+    if (m.ready > 60) step("Get back to Torn", "You are free to fly again " + when(m.ready) + ". Sell what you carry first (see What you carry).");
+    if (m.filler) {
+      var f = m.filler;
+      step("While you wait: quick trip to " + esc(f.c[1]),
+        "Buy <b>" + esc(f.x.name) + "</b> for " + money(f.x.cost) + ", sell at the " + f.where + " for " + money(f.sell) + " (<b>" + signed(f.profit) + " each</b>). " +
+        dur(flightSec(f.c[0]) * 2) + " round trip, so you are back before you need to leave.");
+    }
+    var leaveTxt = bp.leave - m.ready <= 60 ? "Leave " + when(bp.leave) : "Leave for " + esc(b.c[1]) + " " + when(bp.leave);
+    step((bp.wait > 0 ? leaveTxt : "Fly direct to " + esc(b.c[1]) + " " + when(bp.leave)) + ", " + b.c[2],
+      "Buy <b>" + esc(b.x.name) + "</b> for " + money(b.x.cost) + ", sell at the " + b.where + " for " + money(b.sell) + " (<b>" + signed(b.profit) + " each</b>). " +
+      "You land " + when(bp.land) + (bp.wait > 0 ? ", just as it restocks. There is " + dur(bp.leave - m.ready) + " of free time before you need to leave." : b.x.qty > 0 ? ", and it should still be in stock." : ", after the restock."));
+    step("Fly home and sell", "Back in Torn " + when(bp.land + flightSec(b.c[0])) + ".");
+    var alt = bp.wait > 0 && m.alt && m.alt.r !== b && (!m.filler || m.alt.r !== m.filler) ? "<div class='note' style='margin-top:6px'>If you do not want to wait: fly direct to " + esc(m.alt.r.c[1]) + " for " + esc(m.alt.r.x.name) + " (" + signed(m.alt.r.profit) + " each), in stock when you land.</div>" : "";
+    $("#moveBox").innerHTML = "<div class='card move'><h2>Your next move</h2>" + steps.join("") + alt +
+      "<div class='note' style='margin-top:8px'>Picked for the most profit per item for the time it takes, counting the flight back to Torn first, restock times and how fast stock sells.</div></div>";
+  }
+
+  // ---------------------------------------------------------------- trips
+  function trips(kind) {
+    if (!S.items || !S.stock) return [];
+    var out = [];
+    COUNTRIES.forEach(function (c) {
+      var st = S.stock[c[0]]; if (!st) return;
+      st.items.forEach(function (x) {
+        var it = S.items[x.id] || {}, sell, where;
+        if (kind === "fixed") {
+          if (!it.npc || it.npc <= x.cost) return;
+          sell = it.npc; where = "Torn shop";
+        } else {
+          if (it.avg && it.avg <= x.cost * 0.98 && low(x.id) == null) return;
+          want(x.id);
+          var l = low(x.id); if (l == null || l <= x.cost || (it.npc && it.npc * 1.05 >= l)) return;   // only when the market clearly beats the Torn shop
+          sell = l; where = "Item market";
+        }
+        var rt = flightSec(c[0]) * 2, profit = sell - x.cost;
+        out.push({ c: c, x: x, it: it, sell: sell, where: where, profit: profit, perHour: profit / (rt / 3600), land: landing(c[0], x), restock: nextRestock(c[0], x), every: interval(c[0], x) });
+      });
+    });
+    // items you can actually buy when you land come first, then the best profit per hour
+    return out.sort(function (a, b) { return (b.land.ok - a.land.ok) || (b.perHour - a.perHour); });
+  }
+  function destCode() {
+    var t = S.travel;
+    if (t && t.arrival_at > now() && t.destination !== "Torn") { var c = BY_NAME[String(t.destination || "").toLowerCase()]; return c ? c[0] : null; }
+    if (S.status && S.status.state === "Abroad") { var c2 = BY_NAME[String(S.status.description || "").replace(/^In /, "").toLowerCase()]; return c2 ? c2[0] : null; }
+    return null;
+  }
+  function tripRow(r, i) {
+    var x = r.x, dest = destCode() === r.c[0];
+    var stock = x.qty > 0 ? "<span class='q'>" + x.qty.toLocaleString() + "</span> in stock" : "<span class='q bad'>Empty</span>";
+    var rs = r.restock != null ? "next restock in " + dur(r.restock) : (r.every ? "restocks about every " + dur(r.every) : "");
+    return "<div class='trip" + (dest ? " dest" : "") + (i < 3 ? " top3" : "") + "'>" +
+      "<div class='rk'>" + (i + 1) + "</div>" +
+      "<div class='it'>" + img(x.id) + "<div style='min-width:0'><b>" + esc(x.name) + "</b><div class='rt'><span class='cb'>" + r.c[2] + "</span>" + esc(r.c[1]) + " to " + r.where +
+        " <span class='tag " + (r.where === "Torn shop" ? "fixed'>FIXED" : "mkt'>MARKET") + "</span></div></div></div>" +
+      "<div class='pr'><div class='p'>" + signed(r.profit) + " <span class='note' style='font:400 12px Inter'>each</span></div><small>buy " + money(x.cost) + " · sell " + money(r.sell) + "</small><small>" + signed(r.perHour) + " per hour of flying</small></div>" +
+      "<div class='st'>" + stock + (rs ? " · " + rs : "") + "<small class='" + (r.land.ok ? "ok" : r.land.warn ? "warn" : "bad") + "'>" + esc(r.land.txt) + "</small><small>Flight " + dur(flightSec(r.c[0])) + " each way</small></div>" +
+    "</div>";
+  }
+  function filterRows(rows, f) {
+    if (f === "in") return rows.filter(function (r) { return r.x.qty > 0; });
+    if (f === "land") return rows.filter(function (r) { return r.land.ok; });
+    return rows;
+  }
+  function paintList(kind, el) {
+    if (!S.items || !S.stock) { $(el).innerHTML = "<div class='empty'>Loading prices and abroad stock...</div>"; return; }
+    var rows = filterRows(trips(kind), S.f[kind]);
+    var shown = S.open[kind] ? rows : rows.slice(0, SHOW);
+    $(el).innerHTML = rows.length ? shown.map(tripRow).join("") +
+      (rows.length > SHOW ? "<button class='btn more' data-more='" + kind + "'>" + (S.open[kind] ? "Show top " + SHOW + " only" : "Show all " + rows.length) + "</button>" : "")
+      : "<div class='empty'>" + (kind === "mkt" && queue.length ? "Checking item market prices..." : "Nothing profitable with this filter right now.") + "</div>";
+  }
+
+  // ---------------------------------------------------------------- status, destination box, carry
+  function paintStatus() {
+    var t = S.travel, s = S.status, h;
+    if (t && t.arrival_at > now()) {
+      var home = t.destination === "Torn", c = BY_NAME[String(t.destination || "").toLowerCase()];
+      h = "<span class='cb'>" + (home ? "TORN" : (c ? c[2] : "FLY")) + "</span><div><div class='big'>" + (home ? "Flying home to Torn" : "Flying to " + esc(t.destination)) + "</div><div class='note'>" + esc(t.method || "") + " flight</div></div>" +
+        "<div class='cd'><span class='note'>Lands in</span><b id='cd' data-at='" + t.arrival_at + "'>" + clock(t.arrival_at - now()) + "</b></div>";
+    } else if (s && s.state === "Abroad") {
+      var m = String(s.description || "").replace(/^In /, ""), c2 = BY_NAME[m.toLowerCase()];
+      h = "<span class='cb'>" + (c2 ? c2[2] : "ABROAD") + "</span><div><div class='big'>You are in " + esc(m) + "</div><div class='note'>Buy from the list below, then fly home</div></div>";
+    } else {
+      h = "<span class='cb'>TORN</span><div><div class='big'>You are in Torn</div><div class='note'>" + esc((s && s.description) || "Okay") + " · pick a trip below</div></div>";
+    }
+    $("#status").innerHTML = h;
+    $("#methodName").textContent = S.method.charAt(0).toUpperCase() + S.method.slice(1);
+  }
+  function paintDest() {
+    var code = destCode(); if (!code || !S.stock) { $("#destBox").innerHTML = ""; return; }
+    var c = BY_CODE[code];
+    var rows = trips("fixed").concat(trips("mkt")).filter(function (r) { return r.c[0] === code; }).sort(function (a, b) { return b.profit - a.profit; }).slice(0, 5);
+    $("#destBox").innerHTML = "<div class='sec'><h2><span class='cb'>" + c[2] + "</span> Buy in " + esc(c[1]) + "</h2><span class='note'>Where you are going now. Best items there, highest profit each first.</span></div>" +
+      (rows.length ? rows.map(tripRow).join("") : "<div class='empty'>Nothing profitable to bring back from " + esc(c[1]) + " right now.</div>");
+  }
+  function paintCarry() {
+    if (!S.items) return;
+    var dest = destCode(), dc = dest && BY_CODE[dest], abroad = {};
+    Object.keys(S.stock || {}).forEach(function (c) { S.stock[c].items.forEach(function (x) { abroad[x.id] = 1; }); });
+    var rows = Object.keys(S.inv).filter(function (id) { var it = S.items[id]; return it && (Object.keys(it.shops).length || abroad[id]); }).map(function (id) {
+      want(+id);
+      var it = S.items[id], n = S.inv[id];
+      var opts = [["Item market", low(id)], ["Torn shop", it.npc]];
+      if (dc && it.shops[dest]) opts.push([dc[1] + " shop", it.shops[dest]]);
+      opts = opts.filter(function (o) { return o[1]; }).sort(function (a, b) { return b[1] - a[1]; });
+      return { id: id, name: it.name, n: n, best: opts[0] || null, next: opts[1] || null, checked: !!S.low[id] };
+    }).sort(function (a, b) { return (b.best ? b.best[1] * b.n : 0) - (a.best ? a.best[1] * a.n : 0); });
+    $("#carryList").innerHTML = rows.length ? rows.map(function (r) {
+      return "<div class='carry'><div class='it'>" + img(r.id) + "<div style='min-width:0'><b>" + esc(r.name) + "</b><small>you have " + r.n.toLocaleString() + "</small></div></div>" +
+        "<div class='n w'>x" + r.n.toLocaleString() + "</div>" +
+        "<div class='where'>" + (r.best ? "<span class='best'>" + esc(r.best[0]) + "</span> " + money(r.best[1]) + " each" + (!r.checked ? "<small>checking the item market...</small>" : r.next ? "<small>" + esc(r.next[0]) + " pays " + money(r.next[1]) + "</small>" : "<small>No shop buys this, item market only</small>") : "<span class='note'>checking...</span>") + "</div>" +
+        "<div class='w'>" + (r.best ? money(r.best[1] * r.n) : "-") + "<small>in total</small></div></div>";
+    }).join("") : "<div class='note'>You are not carrying anything linked to travel.</div>";
+  }
+
+  var pt = 0;
+  function paintSoon() { if (pt) return; pt = setTimeout(function () { pt = 0; paintAll(); }, 500); }
+  function paintAll() { paintStatus(); paintMove(); paintDest(); paintList("fixed", "#fixedList"); paintList("mkt", "#mktList"); paintCarry(); }
+
+  // ---------------------------------------------------------------- controls
+  [["#fixedChips", "fixed"], ["#mktChips", "mkt"]].forEach(function (p) {
+    $(p[0]).addEventListener("click", function (e) {
+      var b = e.target.closest(".chip"); if (!b) return;
+      S.f[p[1]] = b.dataset.f; [].forEach.call($(p[0]).children, function (x) { x.classList.toggle("on", x === b); }); paintAll();
+    });
+  });
+  document.addEventListener("click", function (e) { var b = e.target.closest("[data-more]"); if (!b) return; S.open[b.dataset.more] = !S.open[b.dataset.more]; paintAll(); });
+  function refresh() {
+    if (!key()) { $("#keyCard").classList.remove("hidden"); return; }
+    loadItems().then(function () { return Promise.all([loadStock(), loadTravel()]); }).then(loadInventory).then(paintAll);
+  }
+  $("#refreshBtn").addEventListener("click", function () { S.low = {}; refresh(); });
+  refresh();
+  setInterval(function () { S.budget = Math.min(4, S.budget + PER_MIN / 60); pump(); }, 1000);
+  setInterval(function () { var cd = document.getElementById("cd"); if (cd) cd.textContent = clock(+cd.dataset.at - now()); }, 1000);
+  setInterval(function () { Promise.all([loadStock(), loadTravel()]).then(paintSoon); }, 60000);
+  setInterval(function () { loadInventory().then(paintSoon); }, 300000);
+})();
+</script>
+</body>
+</html>
