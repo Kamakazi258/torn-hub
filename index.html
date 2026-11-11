@@ -319,6 +319,16 @@
   .al.go{border-color:rgba(135,201,166,.45);color:var(--text)} .al.go .dot{background:var(--good)}
   .al.warn{border-color:rgba(226,199,140,.45);color:var(--text)} .al.warn .dot{background:var(--warn)}
   .al.key{cursor:pointer}
+  .nwt{background:var(--surface,#161724);border:1px solid var(--border2,rgba(184,180,214,.22));border-radius:18px;padding:16px 18px;margin:-12px 0 30px}
+  .nwt .top{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:8px}
+  .nwt .k{color:var(--muted,#9a96b0);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .nwt .v{font:700 26px "Space Grotesk",system-ui,sans-serif;color:var(--text,#e9e7f2);font-variant-numeric:tabular-nums}
+  .nwt .ch{font-size:13px;color:var(--muted,#9a96b0)}
+  .nwt .ch b{font-weight:600} .nwt .ch .up{color:#199e70} .nwt .ch .dn{color:#e66767}
+  .nwt svg{display:block;width:100%;height:auto;overflow:visible}
+  .nwt svg text{fill:var(--muted,#9a96b0);font:11px Inter,sans-serif}
+  .nwt .src{color:var(--faint,#6b6880);font-size:11.5px;margin-top:6px}
+  .nwtip{position:fixed;pointer-events:none;z-index:2000;background:#22243a;border:1px solid rgba(184,180,214,.22);border-radius:10px;padding:7px 10px;font-size:12.5px;color:#e9e7f2;box-shadow:0 8px 24px rgba(0,0,0,.45)}
   .sechead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
   .sechead h2{font:600 15px var(--display);margin:0;letter-spacing:.3px}
   .sechead small{color:var(--faint);font-size:12.5px}
@@ -352,6 +362,7 @@
     <div class="phase" aria-hidden="true"></div>
   </div>
   <div class="alerts" id="alerts"></div>
+  <div class="nwt" id="nwTrend"></div>
   <div class="sechead"><h2>Sections</h2><small id="secCount"></small></div>
   <div class="tiles" id="tiles"></div>
 </div>
@@ -409,6 +420,70 @@ function drawAlerts(){
   out.sort((a,b)=>a.sort-b.sort);
   $("#alerts").innerHTML=out.map(a=>'<span class="al '+a.cls+'"><span class="dot"></span>'+a.txt+'</span>').join("");
 }
+// ---- net worth over the last 30 days (Torn keeps one record a day; past days are saved in this browser so they load once)
+const NW={hist:{},busy:false};
+try{ NW.hist=JSON.parse(localStorage.getItem("nw_hist")||"{}")||{}; }catch(e){}
+function nwDay(i){ return Math.floor(Date.now()/86400000)*86400-i*86400; }
+async function nwLoad(){
+  const key=TornHub.getKey?TornHub.getKey():""; const box=$("#nwTrend");
+  if(!key){ box.innerHTML='<div class="k">Net worth, last 30 days</div><div class="ch">Set your Torn API key (Key, top right) to see your net worth trend.</div>'; return; }
+  if(NW.busy) return; NW.busy=true;
+  const today=nwDay(0);
+  for(let i=30;i>=0;i--){
+    const d=nwDay(i);
+    if(NW.hist[d]!=null && d<today) continue;
+    try{
+      const r=await (await fetch("https://api.torn.com/v2/user/personalstats?stat=networth&timestamp="+(d+3600)+"&key="+encodeURIComponent(key))).json();
+      const s=r&&r.personalstats&&r.personalstats[0];
+      if(s&&s.value!=null){ const day=s.timestamp?Math.floor(s.timestamp/86400)*86400:d; if(day!==d) delete NW.hist[d]; NW.hist[day]=s.value; }   // Torn gives the latest record it has for that day
+      else if(r&&r.error){ if(r.error.code===5){ await new Promise(z=>setTimeout(z,61000)); i++; continue; } if(r.error.code===2||r.error.code===16) break; }   // too many requests: wait a minute and try that day again
+    }catch(e){ break; }
+    await new Promise(z=>setTimeout(z,250));
+    if(i%5===0) nwDraw();
+  }
+  Object.keys(NW.hist).forEach(k=>{ if(+k<nwDay(40)) delete NW.hist[k]; });
+  try{ localStorage.setItem("nw_hist",JSON.stringify(NW.hist)); }catch(e){}
+  NW.busy=false; nwDraw();
+}
+function nwMoney(v){ return (v<0?"-$":"$")+Math.round(Math.abs(v)).toLocaleString(); }
+function nwShort(v){ const a=Math.abs(v),s=v<0?"-$":"$"; return s+(a>=1e12?(a/1e12).toFixed(2)+"t":a>=1e9?(a/1e9).toFixed(2)+"b":a>=1e6?(a/1e6).toFixed(1)+"m":Math.round(a/1e3)+"k"); }
+function nwChange(a,b){ if(a==null||b==null) return '<span>-</span>'; const d=a-b, p=b?d/b*100:0; if(!d) return '<b>no change</b>';
+  return '<b class="'+(d>=0?"up":"dn")+'">'+(d>=0?"+":"-")+nwShort(Math.abs(d)).replace("-","")+' ('+(d>=0?"+":"")+p.toFixed(1)+'%)</b>'; }
+function nwDraw(){
+  const pts=[]; for(let i=30;i>=0;i--){ const d=nwDay(i); if(NW.hist[d]!=null) pts.push([d,NW.hist[d]]); }
+  const box=$("#nwTrend");
+  if(pts.length<2){ box.innerHTML='<div class="k">Net worth, last 30 days</div><div class="ch">Loading your daily net worth from Torn...</div>'; return; }
+  const last=pts[pts.length-1], prev=pts[pts.length-2], first=pts[0];
+  const W=Math.max(280,box.clientWidth-36), H=170, L=58, R=10, T=10, B=22;
+  const vals=pts.map(p=>p[1]); let lo=Math.min(...vals), hi=Math.max(...vals); const pad=(hi-lo)*0.12||hi*0.01||1; lo-=pad; hi+=pad;
+  const x=i=>L+(W-L-R)*i/(pts.length-1), y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Net worth over the last 30 days">';
+  for(let g=0;g<=3;g++){ const v=lo+(hi-lo)*g/3; s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="rgba(184,180,214,.10)"/><text x="'+(L-8)+'" y="'+(y(v)+4)+'" text-anchor="end">'+nwShort(v)+'</text>'; }
+  const line=pts.map((p,i)=>x(i)+","+y(p[1])).join(" ");
+  s+='<polygon points="'+x(0)+','+(H-B)+' '+line+' '+x(pts.length-1)+','+(H-B)+'" fill="rgba(57,135,229,.12)"/>';
+  s+='<polyline points="'+line+'" fill="none" stroke="#3987e5" stroke-width="2" stroke-linejoin="round"/>';
+  s+='<circle cx="'+x(pts.length-1)+'" cy="'+y(last[1])+'" r="4.5" fill="#3987e5" stroke="#161724" stroke-width="2"/>';
+  const fmtD=t=>new Date(t*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"});
+  s+='<text x="'+L+'" y="'+(H-4)+'">'+fmtD(first[0])+'</text><text x="'+(W-R)+'" y="'+(H-4)+'" text-anchor="end">'+fmtD(last[0])+'</text>';
+  const step=(W-L-R)/(pts.length-1);
+  pts.forEach((p,i)=>{ const pv=i?pts[i-1][1]:null;
+    const tip='<b>'+fmtD(p[0])+'</b><br>'+nwMoney(p[1])+(pv!=null?'<br>'+(p[1]-pv>=0?"+":"-")+nwMoney(Math.abs(p[1]-pv)).replace("-","")+' that day':'');
+    s+='<rect data-nwtip="'+tip.replace(/"/g,"&quot;")+'" x="'+(x(i)-step/2)+'" y="'+T+'" width="'+step+'" height="'+(H-T-B)+'" fill="transparent"/>'; });
+  s+='</svg>';
+  box.innerHTML='<div class="top"><div><div class="k">Net worth</div><div class="v">'+nwMoney(last[1])+'</div></div>'+
+    '<div class="ch">Since yesterday<br>'+nwChange(last[1],prev[1])+'</div><div class="ch">Last 30 days<br>'+nwChange(last[1],first[1])+'</div></div>'+s+
+    '<div class="src">Torn records your net worth once a day; hover or tap the chart for each day. Live details are in Wealth Portfolio.</div>';
+}
+(function(){ let tip=null;
+  function show(e){ const t=e.target.closest&&e.target.closest("[data-nwtip]"); if(!t){ if(tip) tip.remove(), tip=null; return; }
+    if(!tip){ tip=document.createElement("div"); tip.className="nwtip"; document.body.appendChild(tip); }
+    tip.innerHTML=t.getAttribute("data-nwtip"); tip.style.left=Math.min(innerWidth-tip.offsetWidth-8,e.clientX+14)+"px"; tip.style.top=Math.max(8,e.clientY-tip.offsetHeight-12)+"px"; }
+  document.addEventListener("mousemove",show); document.addEventListener("click",show);
+  addEventListener("scroll",()=>{ if(tip) tip.remove(), tip=null; },{passive:true});
+  let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(nwDraw,250); });
+})();
+nwDraw(); nwLoad(); setInterval(nwLoad,3600000);
+
 loadAlerts(); setInterval(loadAlerts,120000); setInterval(drawAlerts,30000);
 
 TornHub.fetchView("profile").then(d=>{
