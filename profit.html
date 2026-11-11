@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Profit Check</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%230c0d17'/><path d='M15.7 3.2A9 9 0 1 0 21 14.3 7 7 0 0 1 15.7 3.2Z' fill='%2387C9A6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<script src="config.js"></script>
+<script src="nav.js"></script>
+<style>
+  :root{
+    --bg:#0e0f18; --surface:#161724; --surface2:#1d1e2e; --border:rgba(184,180,214,.12); --border2:rgba(184,180,214,.22);
+    --text:#e9e7f2; --muted:#9a96b0; --faint:#6b6880;
+    --accent:#87c9a6;
+    /* chart colours, checked for colour-blind separation on this dark surface */
+    --c1:#3987e5; --c2:#d95926; --c3:#199e70; --win:#199e70; --loss:#e66767; --grid:rgba(184,180,214,.10);
+    --display:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1100px 600px at 78% -12%, rgba(135,201,166,.09), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(57,135,229,.07), transparent 60%), var(--bg);
+    color:var(--text); font:14px/1.5 Inter,"Segoe UI",system-ui,sans-serif; min-height:100vh;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 60px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .moon{width:32px;height:32px;filter:drop-shadow(0 0 12px rgba(135,201,166,.5))}
+  h1{font:700 22px var(--display);margin:0}
+  .sub{color:var(--muted);font-size:12.5px}
+  .note{color:var(--muted);font-size:12.5px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px}
+  .card h2{font:600 15px var(--display);margin:0 0 4px}
+  .card .cap{color:var(--muted);font-size:12px;margin-bottom:12px}
+  textarea{width:100%;min-height:150px;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--border2);border-radius:12px;padding:12px;font:13px/1.5 Inter,sans-serif}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .btn{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:8px 16px;font:600 13px Inter,sans-serif;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#0e1a14;border-color:var(--accent)}
+  .hidden{display:none!important}
+  .tabs{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
+  .tab{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:8px 14px;font:600 13px var(--display);cursor:pointer}
+  .tab.on{background:var(--surface2);color:var(--text);border-color:var(--accent)}
+  .tab .n{color:var(--faint);font-weight:500;margin-left:4px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 14px}
+  .tile .k{color:var(--muted);font:600 11px Inter,sans-serif;text-transform:uppercase;letter-spacing:.5px}
+  .tile .v{font:700 19px var(--display);font-variant-numeric:tabular-nums}
+  .tile .s{color:var(--muted);font-size:12px}
+  .tile.hero{grid-column:span 2}
+  .tile.hero .v{font-size:28px}
+  .up{color:var(--win)} .down{color:var(--loss)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid2 .card{margin-bottom:0}
+  .charts{margin-bottom:16px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  svg text{fill:var(--muted);font:11px Inter,sans-serif}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .tip{position:fixed;pointer-events:none;z-index:2000;background:#22243a;border:1px solid var(--border2);border-radius:10px;padding:8px 10px;font-size:12.5px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:260px}
+  .tip b{font-family:var(--display)}
+  .hit{cursor:pointer}
+  table{width:100%;border-collapse:collapse}
+  th{font:600 11px Inter,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  th.num,td.num{text-align:right}
+  td .s2{display:block;color:var(--muted);font-size:11.5px}
+  .tw{overflow-x:auto}
+  .pill{font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px;border:1px solid}
+  .pill.w{color:var(--win);border-color:rgba(25,158,112,.5)} .pill.l{color:var(--loss);border-color:rgba(230,103,103,.5)}
+  .pill.s{color:#7fb0ef;border-color:rgba(57,135,229,.5)} .pill.b{color:#ec8a5e;border-color:rgba(217,89,38,.5)}
+  .empty{color:var(--muted);padding:20px;text-align:center}
+  .warnline{color:var(--muted);font-size:12px;margin-top:6px}
+  @media(max-width:760px){
+    .grid2{grid-template-columns:1fr}
+    .tile.hero{grid-column:1 / -1}
+    table.mob thead{display:none}
+    table.mob,table.mob tbody,table.mob tr,table.mob td{display:block}
+    table.mob tr{border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+    table.mob td{border:0;padding:0;white-space:normal}
+    table.mob td[data-l]::before{content:attr(data-l)": ";color:var(--muted);font-size:11.5px}
+    table.mob td.num{text-align:left}
+    table.mob td .s2{display:inline;margin-left:4px}
+  }
+</style>
+</head>
+<body data-section="profit">
+<div class="wrap">
+  <header>
+    <svg class="moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15.5 2.5A9.5 9.5 0 1 0 21.5 15 7.5 7.5 0 0 1 15.5 2.5Z" fill="#87C9A6"/></svg>
+    <div><h1>Profit Check</h1><div class="sub">Paste your Torn log lines and see what you really made</div></div>
+  </header>
+
+  <div class="card">
+    <h2>Paste your log</h2>
+    <div class="cap">Russian Roulette results and share sales and purchases, as many lines as you like, mixed together. Newest first or oldest first both work. Nothing is saved; Clear wipes it.</div>
+    <textarea id="paste" placeholder="You won the game of Russian Roulette against ... winning the pot of $...&#10;14:38:19 - 11/11/26&#10;You sold 31,000x Grain shares at $330.27 each for a total of $10,228,131 after $10,239 in fees&#10;14:33:06 - 11/11/26"></textarea>
+    <div class="row">
+      <button class="btn primary" id="calcBtn">Calculate</button>
+      <button class="btn" id="clearBtn">Clear</button>
+      <span class="note" id="readNote"></span>
+    </div>
+  </div>
+
+  <div id="results" class="hidden">
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-t="rr">Russian Roulette<span class="n" id="nRR"></span></button>
+      <button class="tab" data-t="st">Stock moves<span class="n" id="nST"></span></button>
+    </div>
+    <div id="tabRR"></div>
+    <div id="tabST" class="hidden"></div>
+  </div>
+</div>
+<div class="tip hidden" id="tip"></div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  function num(s) { return Number(String(s).replace(/[$,]/g, "")) || 0; }
+  function money(v) { return (v < 0 ? "-$" : "$") + Math.round(Math.abs(v)).toLocaleString(); }
+  function signed(v) { return (v >= 0 ? "+$" : "-$") + Math.round(Math.abs(v)).toLocaleString(); }
+  function short(v) { var a = Math.abs(v), s = v < 0 ? "-$" : "$";
+    return s + (a >= 1e9 ? (a / 1e9).toFixed(2) + "b" : a >= 1e6 ? (a / 1e6).toFixed(1) + "m" : a >= 1e3 ? Math.round(a / 1e3) + "k" : Math.round(a)); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function mins(m) { return m >= 60 ? Math.floor(m / 60) + "h " + (m % 60) + "m" : m + "m"; }
+
+  // ---------------------------------------------------------------- reading the pasted lines
+  var RE = {
+    won: /You won the game of Russian Roulette against (.+?) winning the pot of \$([\d,]+)/i,
+    lost: /You lost the game of Russian Roulette against (.+?) losing the pot of \$([\d,]+)(?: and going to the hospital for (\d+)h (\d+)m)?/i,
+    sold: /You sold ([\d,]+)x (.+?) shares at \$([\d,.]+) each for a total of \$([\d,]+)(?: after \$([\d,]+) in fees)?/i,
+    bought: /You bought ([\d,]+)x (.+?) shares at \$([\d,.]+) each for a total of \$([\d,]+)/i,
+    time: /(\d{1,2}):(\d{2}):(\d{2})\s*-\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/
+  };
+  function parse(text) {
+    var ev = [], last = null, skipped = 0;
+    text.split(/\r?\n/).forEach(function (line) {
+      line = line.trim(); if (!line) return;
+      var m, e = null;
+      if ((m = line.match(RE.won))) e = { k: "rr", win: true, opp: m[1].trim(), pot: num(m[2]) };
+      else if ((m = line.match(RE.lost))) e = { k: "rr", win: false, opp: m[1].trim(), pot: num(m[2]), hosp: m[3] != null ? (+m[3]) * 60 + (+m[4]) : 0 };
+      else if ((m = line.match(RE.sold))) e = { k: "sold", qty: num(m[1]), stock: m[2].trim(), price: num(m[3]), net: num(m[4]), fees: m[5] ? num(m[5]) : 0 };
+      else if ((m = line.match(RE.bought))) e = { k: "bought", qty: num(m[1]), stock: m[2].trim(), price: num(m[3]), cost: num(m[4]) };
+      else if ((m = line.match(RE.time)) && last && !last.ts) {
+        // Torn shows times as hh:mm:ss - dd/mm/yy
+        var y = +m[6]; if (y < 100) y += 2000;
+        last.ts = Date.UTC(y, +m[5] - 1, +m[4], +m[1], +m[2], +m[3]); last.tt = m[1] + ":" + m[2] + ":" + m[3] + " " + m[4] + "/" + m[5];
+        return;
+      } else { if (!RE.time.test(line)) skipped++; return; }
+      e.pos = ev.length; ev.push(e); last = e;
+    });
+    // put oldest first: Torn lists newest first, so reverse when the times run backwards (or when there are no times)
+    var t = ev.filter(function (e) { return e.ts; });
+    var newestFirst = t.length < 2 ? true : t[0].ts > t[t.length - 1].ts;
+    if (newestFirst) ev.reverse();
+    return { ev: ev, skipped: skipped };
+  }
+
+  // ---------------------------------------------------------------- the maths
+  function roulette(ev) {
+    var g = ev.filter(function (e) { return e.k === "rr"; }), run = 0, opp = {};
+    g.forEach(function (e) {
+      e.half = e.pot / 2;                         // each player puts in half the pot
+      e.result = e.win ? e.half : -e.half;        // win: your half comes back plus their half (profit = half); loss: your half is gone
+      run += e.result; e.run = run;
+      var o = opp[e.opp] || (opp[e.opp] = { name: e.opp, net: 0, w: 0, l: 0 });
+      o.net += e.result; if (e.win) o.w++; else o.l++;
+    });
+    var wins = g.filter(function (e) { return e.win; }), losses = g.filter(function (e) { return !e.win; });
+    function sum(a, f) { return a.reduce(function (s, e) { return s + f(e); }, 0); }
+    return {
+      games: g, wins: wins, losses: losses, net: run,
+      won: sum(wins, function (e) { return e.half; }), lost: sum(losses, function (e) { return e.half; }),
+      bigWin: wins.reduce(function (m, e) { return !m || e.half > m.half ? e : m; }, null),
+      bigLoss: losses.reduce(function (m, e) { return !m || e.half > m.half ? e : m; }, null),
+      hosp: sum(losses, function (e) { return e.hosp || 0; }),
+      opp: Object.keys(opp).map(function (k) { return opp[k]; }).sort(function (a, b) { return b.net - a.net; })
+    };
+  }
+  function stocks(ev, rrNet) {
+    var s = ev.filter(function (e) { return e.k === "sold" || e.k === "bought"; }), by = {};
+    s.forEach(function (e) {
+      var o = by[e.stock] || (by[e.stock] = { name: e.stock, sq: 0, gross: 0, fees: 0, net: 0, bq: 0, cost: 0 });
+      if (e.k === "sold") { o.sq += e.qty; o.fees += e.fees; o.net += e.net; o.gross += e.net + e.fees; }
+      else { o.bq += e.qty; o.cost += e.cost; }
+    });
+    var list = Object.keys(by).map(function (k) { return by[k]; });
+    var sales = list.reduce(function (a, o) { return a + o.net; }, 0), spent = list.reduce(function (a, o) { return a + o.cost; }, 0);
+    var fees = list.reduce(function (a, o) { return a + o.fees; }, 0), gross = list.reduce(function (a, o) { return a + o.gross; }, 0);
+    var added = spent - sales;                                        // cash you had to put in on top of the sale money
+    var fromRR = added > 0 ? Math.min(added, Math.max(0, rrNet)) : 0;
+    return { lines: s, list: list, sales: sales, spent: spent, fees: fees, gross: gross, added: added, fromRR: fromRR, other: added > 0 ? added - fromRR : 0 };
+  }
+
+  // ---------------------------------------------------------------- charts (plain SVG, hover for exact numbers)
+  function niceTicks(lo, hi, n) {
+    var span = hi - lo || Math.abs(hi) || 1, step = Math.pow(10, Math.floor(Math.log10(span / n))), err = span / n / step;
+    step *= err >= 7.5 ? 10 : err >= 3 ? 5 : err >= 1.5 ? 2 : 1;
+    var t = [], a = Math.floor(lo / step) * step; for (; a <= hi + step * 0.5; a += step) t.push(a); return t;
+  }
+  function lineChart(games, W) {
+    var H = 240, L = 56, R = 14, T = 14, B = 26;
+    var vals = [0].concat(games.map(function (g) { return g.run; }));
+    var ticks = niceTicks(Math.min.apply(null, vals), Math.max.apply(null, vals), 4), lo = ticks[0], hi = ticks[ticks.length - 1];
+    var x = function (i) { return L + (W - L - R) * (games.length ? i / games.length : 0); };
+    var y = function (v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1)); };
+    var h = "<svg viewBox='0 0 " + W + " " + H + "' role='img' aria-label='Running total after each game'>";
+    ticks.forEach(function (t) { h += "<line x1='" + L + "' x2='" + (W - R) + "' y1='" + y(t) + "' y2='" + y(t) + "' stroke='" + (t === 0 ? "rgba(184,180,214,.35)" : "var(--grid)") + "'/><text x='" + (L - 8) + "' y='" + (y(t) + 4) + "' text-anchor='end'>" + short(t) + "</text>"; });
+    var pts = vals.map(function (v, i) { return x(i) + "," + y(v); }).join(" ");
+    h += "<polyline points='" + pts + "' fill='none' stroke='#9fb6ee' stroke-width='2' stroke-linejoin='round'/>";
+    games.forEach(function (g, i) {
+      var cx = x(i + 1), cy = y(g.run), tip = "<b>Game " + (i + 1) + ": " + (g.win ? "won" : "lost") + " vs " + esc(g.opp) + "</b><br>" + signed(g.result) + " this game<br>Running total " + signed(g.run) + (g.tt ? "<br>" + g.tt : "");
+      h += "<circle cx='" + cx + "' cy='" + cy + "' r='5' fill='" + (g.win ? "var(--win)" : "var(--loss)") + "' stroke='var(--surface)' stroke-width='2'/>" +
+        "<rect class='hit' data-tip=\"" + tip.replace(/"/g, "&quot;") + "\" x='" + (cx - 14) + "' y='" + T + "' width='28' height='" + (H - T - B) + "' fill='transparent'/>";
+    });
+    var lastG = games[games.length - 1];
+    if (lastG) h += "<text x='" + Math.min(x(games.length), W - R) + "' y='" + (y(lastG.run) - 10) + "' text-anchor='end' style='fill:var(--text);font-weight:600'>" + signed(lastG.run) + "</text>";
+    h += "<text x='" + L + "' y='" + (H - 6) + "'>Start</text><text x='" + (W - R) + "' y='" + (H - 6) + "' text-anchor='end'>Game " + games.length + "</text></svg>";
+    return h;
+  }
+  function gameBars(games, W) {   // profit or loss of each game, above or below zero
+    var H = 220, L = 56, R = 14, T = 14, B = 22, n = games.length || 1;
+    var vals = games.map(function (g) { return g.result; }).concat([0]);
+    var ticks = niceTicks(Math.min.apply(null, vals), Math.max.apply(null, vals), 4), lo = ticks[0], hi = ticks[ticks.length - 1];
+    var y = function (v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1)); };
+    var bw = Math.max(4, Math.min(36, (W - L - R) / n - 2)), step = (W - L - R) / n;
+    var h = "<svg viewBox='0 0 " + W + " " + H + "' role='img' aria-label='Profit or loss of each game'>";
+    ticks.forEach(function (t) { h += "<line x1='" + L + "' x2='" + (W - R) + "' y1='" + y(t) + "' y2='" + y(t) + "' stroke='" + (t === 0 ? "rgba(184,180,214,.35)" : "var(--grid)") + "'/><text x='" + (L - 8) + "' y='" + (y(t) + 4) + "' text-anchor='end'>" + short(t) + "</text>"; });
+    games.forEach(function (g, i) {
+      var cx = L + step * i + step / 2, y0 = y(0), y1 = y(g.result), top = Math.min(y0, y1), hh = Math.max(2, Math.abs(y1 - y0));
+      var tip = "<b>Game " + (i + 1) + ": " + (g.win ? "won" : "lost") + " vs " + esc(g.opp) + "</b><br>Pot " + money(g.pot) + "<br>Your " + (g.win ? "profit" : "loss") + " " + signed(g.result);
+      h += "<rect x='" + (cx - bw / 2) + "' y='" + top + "' width='" + bw + "' height='" + hh + "' rx='3' fill='" + (g.win ? "var(--win)" : "var(--loss)") + "'/>" +
+        "<rect class='hit' data-tip=\"" + tip.replace(/"/g, "&quot;") + "\" x='" + (L + step * i) + "' y='" + T + "' width='" + step + "' height='" + (H - T - B) + "' fill='transparent'/>";
+    });
+    return h + "</svg>";
+  }
+  function donut(w, l, wonAmt, lostAmt) {
+    var tot = w + l || 1, r = 52, c = 2 * Math.PI * r, gap = 3, wl = c * w / tot;
+    var h = "<svg viewBox='0 0 160 160' style='max-width:220px;margin:0 auto' role='img' aria-label='Games won and lost'>" +
+      "<circle cx='80' cy='80' r='" + r + "' fill='none' stroke='var(--loss)' stroke-width='18' stroke-dasharray='" + Math.max(0, c - wl - gap) + " " + c + "' stroke-dashoffset='" + (-(wl + gap / 2)) + "' transform='rotate(-90 80 80)'/>" +
+      (w ? "<circle cx='80' cy='80' r='" + r + "' fill='none' stroke='var(--win)' stroke-width='18' stroke-dasharray='" + Math.max(0, wl - gap) + " " + c + "' stroke-dashoffset='" + (-gap / 2) + "' transform='rotate(-90 80 80)'/>" : "") +
+      "<text x='80' y='76' text-anchor='middle' style=\"fill:var(--text);font:700 22px 'Space Grotesk',sans-serif\">" + Math.round(w / tot * 100) + "%</text>" +
+      "<text x='80' y='96' text-anchor='middle'>games won</text></svg>";
+    return h + "<div class='legend' style='justify-content:center'><span><i style='background:var(--win)'></i>Won " + w + " · " + short(wonAmt) + "</span><span><i style='background:var(--loss)'></i>Lost " + l + " · " + short(lostAmt) + "</span></div>";
+  }
+  function oppBars(opp, W) {   // horizontal bars from a centre line
+    var rowH = 30, L = Math.min(130, W * 0.3), R = Math.min(110, W * 0.25), H = opp.length * rowH + 8;
+    var mx = Math.max.apply(null, opp.map(function (o) { return Math.abs(o.net); }).concat([1]));
+    var mid = L + (W - L - R) / 2, half = (W - L - R) / 2;
+    var h = "<svg viewBox='0 0 " + W + " " + H + "' role='img' aria-label='Net result against each opponent'><line x1='" + mid + "' x2='" + mid + "' y1='0' y2='" + H + "' stroke='rgba(184,180,214,.35)'/>";
+    opp.forEach(function (o, i) {
+      var y = i * rowH + 6, w = Math.max(2, Math.abs(o.net) / mx * half), x = o.net >= 0 ? mid : mid - w;
+      var tip = "<b>" + esc(o.name) + "</b><br>Won " + o.w + ", lost " + o.l + "<br>Net " + signed(o.net);
+      h += "<text x='" + (L - 10) + "' y='" + (y + 15) + "' text-anchor='end' style='fill:var(--text)'>" + esc(o.name.length > 16 ? o.name.slice(0, 15) + "…" : o.name) + "</text>" +
+        "<rect x='" + x + "' y='" + y + "' width='" + w + "' height='20' rx='3' fill='" + (o.net >= 0 ? "var(--win)" : "var(--loss)") + "'/>" +
+        "<text x='" + (o.net >= 0 ? x + w + 6 : x - 6) + "' y='" + (y + 15) + "' text-anchor='" + (o.net >= 0 ? "start" : "end") + "'>" + signed(o.net) + "</text>" +
+        "<rect class='hit' data-tip=\"" + tip.replace(/"/g, "&quot;") + "\" x='0' y='" + (y - 4) + "' width='" + W + "' height='" + rowH + "' fill='transparent'/>";
+    });
+    return h + "</svg>";
+  }
+  function stockBars(list, W) {   // shares sold and bought per stock, side by side
+    var rowH = 52, L = Math.min(150, W * 0.32), R = 90, H = list.length * rowH + 4;
+    var mx = Math.max.apply(null, list.map(function (o) { return Math.max(o.sq, o.bq); }).concat([1]));
+    var h = "<svg viewBox='0 0 " + W + " " + H + "' role='img' aria-label='Shares sold and bought per stock'>";
+    list.forEach(function (o, i) {
+      var y = i * rowH + 4, ws = o.sq / mx * (W - L - R), wb = o.bq / mx * (W - L - R);
+      var tip = "<b>" + esc(o.name) + "</b><br>Sold " + o.sq.toLocaleString() + " shares<br>Bought " + o.bq.toLocaleString() + " shares<br>Net " + (o.bq - o.sq >= 0 ? "+" : "") + (o.bq - o.sq).toLocaleString();
+      h += "<text x='" + (L - 10) + "' y='" + (y + 25) + "' text-anchor='end' style='fill:var(--text)'>" + esc(o.name.length > 20 ? o.name.slice(0, 19) + "…" : o.name) + "</text>" +
+        "<rect x='" + L + "' y='" + y + "' width='" + Math.max(o.sq ? 2 : 0, ws) + "' height='18' rx='3' fill='var(--c1)'/>" +
+        "<text x='" + (L + ws + 6) + "' y='" + (y + 13) + "'>" + (o.sq ? o.sq.toLocaleString() + " sold" : "") + "</text>" +
+        "<rect x='" + L + "' y='" + (y + 22) + "' width='" + Math.max(o.bq ? 2 : 0, wb) + "' height='18' rx='3' fill='var(--c2)'/>" +
+        "<text x='" + (L + wb + 6) + "' y='" + (y + 35) + "'>" + (o.bq ? o.bq.toLocaleString() + " bought" : "") + "</text>" +
+        "<rect class='hit' data-tip=\"" + tip.replace(/"/g, "&quot;") + "\" x='0' y='" + y + "' width='" + W + "' height='" + (rowH - 8) + "' fill='transparent'/>";
+    });
+    return h + "</svg><div class='legend'><span><i style='background:var(--c1)'></i>Shares sold</span><span><i style='background:var(--c2)'></i>Shares bought</span></div>";
+  }
+  function fundBar(st, W) {   // where the buy-back money came from
+    var parts = [["Sale money", Math.min(st.sales, st.spent), "var(--c1)"], ["Roulette winnings", st.fromRR, "var(--c3)"], ["Other cash", st.other, "var(--c2)"]].filter(function (p) { return p[1] > 0; });
+    var tot = st.spent || 1, H = 46, x = 0, h = "<svg viewBox='0 0 " + W + " " + H + "' role='img' aria-label='Where the money for buying came from'>";
+    parts.forEach(function (p, i) {
+      var w = p[1] / tot * W - (i < parts.length - 1 ? 2 : 0);
+      var tip = "<b>" + p[0] + "</b><br>" + money(p[1]) + " (" + Math.round(p[1] / tot * 100) + "% of " + money(st.spent) + ")";
+      h += "<rect x='" + x + "' y='4' width='" + Math.max(2, w) + "' height='30' rx='4' fill='" + p[2] + "'/>" +
+        "<rect class='hit' data-tip=\"" + tip.replace(/"/g, "&quot;") + "\" x='" + x + "' y='0' width='" + Math.max(2, w) + "' height='" + H + "' fill='transparent'/>";
+      x += w + 2;
+    });
+    h += "</svg><div class='legend'>" + parts.map(function (p) { return "<span><i style='background:" + p[2] + "'></i>" + p[0] + " " + money(p[1]) + "</span>"; }).join("") + "</div>";
+    return h;
+  }
+
+  // ---------------------------------------------------------------- painting
+  function widths() {
+    var full = Math.max(280, document.querySelector('.wrap').clientWidth - 32 - 34);
+    return { full: full, half: window.innerWidth > 760 ? Math.floor((full - 16) / 2 - 2) : full };
+  }
+  function tile(k, v, s, cls) { return "<div class='tile" + (cls ? " " + cls : "") + "'><div class='k'>" + k + "</div><div class='v'>" + v + "</div>" + (s ? "<div class='s'>" + s + "</div>" : "") + "</div>"; }
+  function paintRR(r) {
+    var wd = widths();
+    if (!r.games.length) { $("#tabRR").innerHTML = "<div class='card empty'>No Russian Roulette lines found in what you pasted.</div>"; return; }
+    var rate = Math.round(r.wins.length / r.games.length * 100);
+    var h = "<div class='tiles'>" +
+      tile("Net profit from roulette", "<span class='" + (r.net >= 0 ? "up" : "down") + "'>" + signed(r.net) + "</span>", r.games.length + " games", "hero") +
+      tile("Won", "<span class='up'>" + signed(r.won) + "</span>", r.wins.length + " wins, " + rate + "% win rate") +
+      tile("Lost", "<span class='down'>" + signed(-r.lost) + "</span>", r.losses.length + (r.losses.length === 1 ? " loss" : " losses")) +
+      tile("Biggest win", r.bigWin ? signed(r.bigWin.half) : "-", r.bigWin ? "vs " + esc(r.bigWin.opp) : "") +
+      tile("Biggest loss", r.bigLoss ? signed(-r.bigLoss.half) : "-", r.bigLoss ? "vs " + esc(r.bigLoss.opp) : "") +
+      tile("Hospital time", r.hosp ? mins(r.hosp) : "0m", "from losses") + "</div>";
+    h += "<div class='card charts'><h2>Running total</h2><div class='cap'>Your net after each game. Green dots are wins, red dots are losses. Hover or tap a game for details.</div>" + lineChart(r.games, wd.full) + "</div>";
+    h += "<div class='grid2 charts'><div class='card'><h2>Each game</h2><div class='cap'>Profit or loss per game, so you can see the stakes grow.</div>" + gameBars(r.games, wd.half) + "</div>" +
+      "<div class='card'><h2>Wins and losses</h2><div class='cap'>Number of games, with the money won and lost.</div>" + donut(r.wins.length, r.losses.length, r.won, r.lost) + "</div></div>";
+    h += "<div class='card charts'><h2>Against each opponent</h2><div class='cap'>Your net result per opponent, best first.</div>" + oppBars(r.opp, wd.full) + "</div>";
+    h += "<div class='card'><h2>Timeline</h2><div class='cap'>Oldest first. Each player puts in half the pot: a win gives you their half as profit, a loss takes your half.</div><div class='tw'><table class='mob'><thead><tr><th>#</th><th>Time</th><th>Result</th><th>Opponent</th><th class='num'>Pot</th><th class='num'>Your result</th><th class='num'>Running total</th></tr></thead><tbody>" +
+      r.games.map(function (g, i) {
+        return "<tr><td data-l='Game'>" + (i + 1) + "</td><td data-l='Time'>" + (g.tt || "-") + "</td><td data-l='Result'><span class='pill " + (g.win ? "w'>WON" : "l'>LOST") + "</span>" + (g.hosp ? "<span class='s2'>hospital " + mins(g.hosp) + "</span>" : "") + "</td>" +
+          "<td data-l='Opponent'>" + esc(g.opp) + "</td><td class='num' data-l='Pot'>" + money(g.pot) + "</td>" +
+          "<td class='num " + (g.win ? "up" : "down") + "' data-l='Your result'>" + signed(g.result) + "</td><td class='num' data-l='Running total'>" + signed(g.run) + "</td></tr>";
+      }).join("") + "</tbody></table></div></div>";
+    $("#tabRR").innerHTML = h;
+  }
+  function paintST(st, r) {
+    var wd = widths();
+    if (!st.lines.length) { $("#tabST").innerHTML = "<div class='card empty'>No share sales or purchases found in what you pasted.</div>"; return; }
+    var h = "<div class='tiles'>" +
+      tile(st.added > 0 ? "Cash you added to buy" : "Sale money not spent on shares", money(Math.abs(st.added)), "bought " + money(st.spent) + " minus sales " + money(st.sales), "hero") +
+      tile("Sale money (after fees)", money(st.sales), "gross " + money(st.gross)) +
+      tile("Fees paid", money(st.fees), "on sales") +
+      tile("Spent buying", money(st.spent), "") +
+      (st.added > 0 ? tile("From roulette winnings", "<span class='up'>" + money(st.fromRR) + "</span>", r.net > st.added ? "roulette covered all of it" : "of your roulette net " + signed(r.net)) +
+        tile("From other cash", money(st.other), st.other ? "money you already had" : "none needed") : "") + "</div>";
+    h += "<div class='grid2 charts'><div class='card'><h2>Shares sold and bought</h2><div class='cap'>Per stock. Hover or tap for the net change.</div>" + stockBars(st.list, wd.half) + "</div>" +
+      "<div class='card'><h2>Where the buying money came from</h2><div class='cap'>" + (st.spent ? "Total spent " + money(st.spent) + "." : "You did not buy any shares.") + "</div>" + (st.spent ? fundBar(st, wd.half) : "") + "</div></div>";
+    h += "<div class='card'><h2>Per stock</h2><div class='tw'><table class='mob'><thead><tr><th>Stock</th><th class='num'>Sold</th><th class='num'>Sale money</th><th class='num'>Fees</th><th class='num'>Bought</th><th class='num'>Cost</th><th class='num'>Net shares</th></tr></thead><tbody>" +
+      st.list.map(function (o) {
+        var d = o.bq - o.sq;
+        return "<tr><td data-l='Stock'><b>" + esc(o.name) + "</b></td><td class='num' data-l='Sold'>" + (o.sq ? o.sq.toLocaleString() : "-") + "</td><td class='num' data-l='Sale money'>" + (o.sq ? money(o.net) + "<span class='s2'>gross " + money(o.gross) + "</span>" : "-") + "</td>" +
+          "<td class='num' data-l='Fees'>" + (o.sq ? money(o.fees) : "-") + "</td><td class='num' data-l='Bought'>" + (o.bq ? o.bq.toLocaleString() : "-") + "</td><td class='num' data-l='Cost'>" + (o.bq ? money(o.cost) : "-") + "</td>" +
+          "<td class='num " + (d >= 0 ? "up" : "down") + "' data-l='Net shares'>" + (d >= 0 ? "+" : "") + d.toLocaleString() + "</td></tr>";
+      }).join("") + "</tbody></table></div></div>";
+    h += "<div class='card'><h2>Timeline</h2><div class='tw'><table class='mob'><thead><tr><th>Time</th><th>Action</th><th>Stock</th><th class='num'>Shares</th><th class='num'>Price</th><th class='num'>Total</th></tr></thead><tbody>" +
+      st.lines.map(function (e) {
+        return "<tr><td data-l='Time'>" + (e.tt || "-") + "</td><td data-l='Action'><span class='pill " + (e.k === "sold" ? "s'>SOLD" : "b'>BOUGHT") + "</span></td><td data-l='Stock'>" + esc(e.stock) + "</td>" +
+          "<td class='num' data-l='Shares'>" + e.qty.toLocaleString() + "</td><td class='num' data-l='Price'>$" + e.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "</td>" +
+          "<td class='num' data-l='Total'>" + (e.k === "sold" ? money(e.net) + (e.fees ? "<span class='s2'>after " + money(e.fees) + " fees</span>" : "") : money(e.cost)) + "</td></tr>";
+      }).join("") + "</tbody></table></div></div>";
+    $("#tabST").innerHTML = h;
+  }
+  function calc() {
+    var p = parse($("#paste").value);
+    if (!p.ev.length) { $("#results").classList.add("hidden"); $("#readNote").textContent = "No Russian Roulette or share lines found."; return; }
+    var r = roulette(p.ev), st = stocks(p.ev, r.net);
+    $("#nRR").textContent = r.games.length; $("#nST").textContent = st.lines.length;
+    $("#readNote").textContent = "Read " + r.games.length + " roulette games and " + st.lines.length + " share lines" + (p.skipped ? ", skipped " + p.skipped + " other lines" : "") + ".";
+    paintRR(r); paintST(st, r);
+    $("#results").classList.remove("hidden");
+    if (!r.games.length && st.lines.length) showTab("st");
+  }
+  function showTab(t) {
+    [].forEach.call(document.querySelectorAll(".tab"), function (b) { b.classList.toggle("on", b.dataset.t === t); });
+    $("#tabRR").classList.toggle("hidden", t !== "rr"); $("#tabST").classList.toggle("hidden", t !== "st");
+  }
+  $("#tabs").addEventListener("click", function (e) { var b = e.target.closest(".tab"); if (b) showTab(b.dataset.t); });
+  $("#calcBtn").addEventListener("click", calc);
+  var rz = 0; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { if (!$("#results").classList.contains("hidden")) { var t = document.querySelector(".tab.on").dataset.t; calc(); showTab(t); } }, 250); });
+  $("#clearBtn").addEventListener("click", function () { $("#paste").value = ""; $("#results").classList.add("hidden"); $("#readNote").textContent = ""; showTab("rr"); $("#paste").focus(); });
+
+  // hover and tap tooltips
+  var tip = $("#tip");
+  function showTip(el, x, y) { tip.innerHTML = el.getAttribute("data-tip"); tip.classList.remove("hidden");
+    var w = tip.offsetWidth, h = tip.offsetHeight; tip.style.left = Math.min(window.innerWidth - w - 8, x + 14) + "px"; tip.style.top = Math.max(8, y - h - 12) + "px"; }
+  document.addEventListener("mousemove", function (e) { var el = e.target.closest && e.target.closest("[data-tip]"); if (el) showTip(el, e.clientX, e.clientY); else tip.classList.add("hidden"); });
+  document.addEventListener("click", function (e) { var el = e.target.closest && e.target.closest("[data-tip]"); if (el) showTip(el, e.clientX, e.clientY); });
+  window.addEventListener("scroll", function () { tip.classList.add("hidden"); }, { passive: true });
+})();
+</script>
+</body>
+</html>
