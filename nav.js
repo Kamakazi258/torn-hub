@@ -19,7 +19,10 @@
       chips: ["Mug history", "Live status", "Hospital timers", "Backup sheet"] },
     { id: "travel", href: "travel.html", name: "Travel", icon: "✈️",
       blurb: "Your next trip planned for you: what to bring back, restock timing, and where to sell what you carry.",
-      chips: ["Next move", "Fixed profit", "Market deals", "What you carry"] }
+      chips: ["Next move", "Fixed profit", "Market deals", "What you carry"] },
+    { id: "profit", href: "profit.html", name: "Profit Check", icon: "💹",
+      blurb: "Paste your Russian Roulette and share logs to see what you really made, with charts.",
+      chips: ["Russian Roulette", "Stock moves", "Charts"] }
   ];
 
   var CSS = [
