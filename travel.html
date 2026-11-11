@@ -73,6 +73,15 @@
   .carry .best{color:var(--gold);font-weight:600}
   .carry small{display:block;color:var(--muted);font-size:12px}
   .src{font-size:11.5px;color:var(--faint);margin-top:18px}
+  .set{display:grid;grid-template-columns:minmax(0,1.2fr) repeat(3,minmax(0,1fr));gap:6px 16px;align-items:center;padding:12px 4px;border-top:1px solid var(--border)}
+  .set:first-child{border-top:0}
+  .set b{font:600 15px var(--display)}
+  .set .v{font:700 16px var(--display);font-variant-numeric:tabular-nums}
+  .set small{display:block;color:var(--muted);font-size:12px}
+  .set .verdict{grid-column:1 / -1;font-size:13px}
+  .set .verdict b{font:600 13px Inter,sans-serif}
+  .good{color:var(--good)} .badc{color:var(--bad)}
+  @media(max-width:700px){.set{grid-template-columns:1fr 1fr}.set .nm{grid-column:1 / -1}}
   .move{border-color:rgba(142,163,216,.45)}
   .move h2{font:700 17px var(--display);margin:0 0 10px}
   .step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;padding:8px 0;border-top:1px solid var(--border)}
@@ -119,6 +128,9 @@
 
   <div class="sec"><h2>What you carry</h2><span class="note">Best place to sell each item you hold that is linked to travel. A foreign shop is included when you are flying there or are there.</span></div>
   <div class="card" id="carryList"></div>
+
+  <div class="sec"><h2>Museum sets</h2><span class="note">One of each plushie, or one of each of the 11 exotic flowers, can be exchanged at the Museum for 10 points (needs the Bachelor of History course). Compared with selling or buying the same items on the item market.</span></div>
+  <div class="card" id="setList"></div>
 
   <div class="src">Shop prices, item market prices, your travel and your items come straight from Torn with your key. Abroad stock, restock times and sell-out speed come from Prombot, YATA and the Foreign Stock restock model (reported by players), so they are estimates.</div>
 </div>
@@ -190,6 +202,35 @@
     var model = fetch("https://raw.githubusercontent.com/russianrob/torn-foreign-restock/main/restock-model.json").then(function (r) { return r.json(); })
       .then(function (j) { S.model = (j && j.items) || {}; }).catch(function () {});
     return Promise.all([stock, model]);
+  }
+  // museum sets: one of each plushie (no Dong plushies) or one of each exotic flower, 10 points each
+  var SETS = [
+    ["Plushie set", "plushies", [186, 187, 215, 258, 261, 266, 268, 269, 273, 274, 281, 384, 618]],
+    ["Exotic flower set", "flowers", [260, 263, 264, 267, 271, 272, 276, 277, 282, 385, 617]]
+  ];
+  function loadPoints() {
+    return torn("/market/pointsmarket?limit=1").then(function (d) {
+      var p = d && d.pointsmarket && d.pointsmarket[0]; if (p && p.cost) S.points = p.cost;
+    }).catch(function () {});
+  }
+  function paintSets() {
+    if (!S.items) return;
+    var pts = S.points || null;
+    $("#setList").innerHTML = SETS.map(function (set) {
+      var ids = set[2], prices = ids.map(function (id) { want(id); return low(id); }), ready = prices.every(function (p) { return p != null; });
+      var setMarket = ready ? prices.reduce(function (a, b) { return a + b; }, 0) : null, worth = pts ? pts * 10 : null;
+      var have = Math.min.apply(null, ids.map(function (id) { return S.inv[id] || 0; }));
+      var missing = ids.filter(function (id) { return !S.inv[id]; }).map(function (id) { return (S.items[id] || {}).name || id; });
+      var diff = setMarket != null && worth != null ? worth - setMarket : null;
+      var verdict = diff == null ? "<span class='note'>Checking item market prices...</span>" :
+        diff > 0 ? "<span class='good'><b>Exchange at the Museum.</b></span> 10 points are worth " + signed(diff) + " more than selling the " + set[1] + " one by one. Buying a full set on the market and exchanging it also makes " + signed(diff) + " per set." :
+        "<span class='badc'><b>Sell on the item market.</b></span> Selling the " + set[1] + " one by one gets " + signed(-diff) + " more than the 10 points.";
+      return "<div class='set'><div class='nm'><b>" + set[0] + "</b><small>" + ids.length + " items · 10 points</small></div>" +
+        "<div><span class='note'>10 points worth</span><div class='v'>" + (worth != null ? money(worth) : "-") + "</div><small>" + (pts ? money(pts) + " per point, cheapest on the points market" : "checking points price") + "</small></div>" +
+        "<div><span class='note'>Same items on the market</span><div class='v'>" + (setMarket != null ? money(setMarket) : "-") + "</div><small>cheapest listing of each, added up</small></div>" +
+        "<div><span class='note'>You can make</span><div class='v'>" + have + " set" + (have === 1 ? "" : "s") + "</div><small>" + (missing.length ? "missing " + missing.length + ": " + esc(missing.slice(0, 4).join(", ")) + (missing.length > 4 ? " and more" : "") : (worth && have ? "worth " + money(worth * have) + " in points" : "you have every item")) + "</small></div>" +
+        "<div class='verdict'>" + verdict + "</div></div>";
+    }).join("");
   }
   function loadTravel() {
     return Promise.all([torn("/user/travel"), torn("/user/basic")]).then(function (r) {
@@ -434,7 +475,7 @@
 
   var pt = 0;
   function paintSoon() { if (pt) return; pt = setTimeout(function () { pt = 0; paintAll(); }, 500); }
-  function paintAll() { paintStatus(); paintMove(); paintDest(); paintList("fixed", "#fixedList"); paintList("mkt", "#mktList"); paintCarry(); }
+  function paintAll() { paintStatus(); paintMove(); paintDest(); paintList("fixed", "#fixedList"); paintList("mkt", "#mktList"); paintCarry(); paintSets(); }
 
   // ---------------------------------------------------------------- controls
   [["#fixedChips", "fixed"], ["#mktChips", "mkt"]].forEach(function (p) {
@@ -446,7 +487,7 @@
   document.addEventListener("click", function (e) { var b = e.target.closest("[data-more]"); if (!b) return; S.open[b.dataset.more] = !S.open[b.dataset.more]; paintAll(); });
   function refresh() {
     if (!key()) { $("#keyCard").classList.remove("hidden"); return; }
-    loadItems().then(function () { return Promise.all([loadStock(), loadTravel()]); }).then(loadInventory).then(paintAll);
+    loadItems().then(function () { return Promise.all([loadStock(), loadTravel(), loadPoints()]); }).then(loadInventory).then(paintAll);
   }
   $("#refreshBtn").addEventListener("click", function () { S.low = {}; refresh(); });
   refresh();
@@ -454,6 +495,7 @@
   setInterval(function () { var cd = document.getElementById("cd"); if (cd) cd.textContent = clock(+cd.dataset.at - now()); }, 1000);
   setInterval(function () { Promise.all([loadStock(), loadTravel()]).then(paintSoon); }, 60000);
   setInterval(function () { loadInventory().then(paintSoon); }, 300000);
+  setInterval(function () { loadPoints().then(paintSoon); }, 600000);
 })();
 </script>
 </body>
