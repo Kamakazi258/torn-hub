@@ -1,6 +1,20 @@
 /* Torn Hub - shared top menu and data access for every page.
  * To add a new section later: add one entry to SECTIONS and create its .html page. */
 (function () {
+  // Phone home screen: TornHub icon, name and app-style opening (Add to Home Screen)
+  try {
+    var hd = document.head;
+    var addTag = function (tag, attrs) { var e = document.createElement(tag); for (var k in attrs) e.setAttribute(k, attrs[k]); hd.appendChild(e); };
+    if (!document.querySelector('link[rel="manifest"]')) addTag("link", { rel: "manifest", href: "manifest.json" });
+    addTag("link", { rel: "apple-touch-icon", href: "apple-touch-icon.png" });
+    addTag("meta", { name: "theme-color", content: "#0c0d17" });
+    addTag("meta", { name: "mobile-web-app-capable", content: "yes" });
+    addTag("meta", { name: "apple-mobile-web-app-capable", content: "yes" });
+    addTag("meta", { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" });
+    addTag("meta", { name: "apple-mobile-web-app-title", content: "TornHub" });
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
+  } catch (e) {}
+
   var SECTIONS = [
     { id: "profile", href: "profile.html", name: "Personal Profile", icon: "👤",
       blurb: "Identity, status, spouse, faction, job, property and social counts.",
